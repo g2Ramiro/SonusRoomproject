@@ -1,0 +1,5 @@
+# Dependencias
+node_modules/
+dist/
+# Variables de entorno secretas
+.env
