@@ -1,96 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>SonusRoom Prototipo Sockets</title>
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-    <h1>SonusRoom - Prueba de Sockets</h1>
-    
-    <div>
-        <label for="roomInput">ID de Sala:</label>
-        <input type="text" id="roomInput" value="sala-verano-iteso">
-        <button id="btnJoin">Conectarse a la Sala</button>
-    </div>
+    <head>
+        <meta charset="UTF-8" />
+        <title>SonusRoom Prototipo Sockets</title>
+        <script src="/socket.io/socket.io.js"></script>
+    </head>
+    <body>
+        <h1>SonusRoom - Prueba de Sockets</h1>
 
-    <br><br>
+        <div>
+            <label for="roomInput">ID de Sala:</label>
+            <input type="text" id="roomInput" value="sala-verano-iteso" />
+            <button id="btnJoin">Conectarse a la Sala</button>
+        </div>
 
-    <audio id="audioPlayer" controls src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></textarea></audio>
+        <br /><br />
 
-    <script>
-    const socket = io();
-    const audioPlayer = document.getElementById('audioPlayer');
-    const roomInput = document.getElementById('roomInput');
-    const btnJoin = document.getElementById('btnJoin');
-    
-    let currentRoom = "";
-    let isBroadcasting = false; // Bandera para evitar bucles infinitos
+        <audio id="audioPlayer" controls src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
 
-    // Conexion a sala
-    btnJoin.addEventListener('click', () => {
-        currentRoom = roomInput.value.trim();
-        if (!currentRoom) return alert("Por favor ingresa un código de sala válido.");
-        
-        socket.emit('join-room', currentRoom);
-        alert(`Conectado a la sala: ${currentRoom}`);
-    });
+        <script>
+            const socket = io();
+            const audioPlayer = document.getElementById('audioPlayer');
+            const roomInput = document.getElementById('roomInput');
+            const btnJoin = document.getElementById('btnJoin');
 
-    //Eventos del socket (cuando se conectan varios, todos responden con socket.emit a la misma sala)
-    audioPlayer.addEventListener('play', () => {
-        if (isBroadcasting) return;
-        socket.emit('player-action', {
-            roomCode: currentRoom,
-            action: 'play',
-            currentTime: audioPlayer.currentTime
-        });
-    });
+            let currentRoom = '';
+            let isBroadcasting = false; // Bandera para evitar bucles infinitos
 
-    audioPlayer.addEventListener('pause', () => {
-        if (isBroadcasting) return;
-        socket.emit('player-action', {
-            roomCode: currentRoom,
-            action: 'pause',
-            currentTime: audioPlayer.currentTime
-        });
-    });
+            // Conexion a sala
+            btnJoin.addEventListener('click', () => {
+                currentRoom = roomInput.value.trim();
+                if (!currentRoom) return alert('Por favor ingresa un código de sala válido.');
 
-    //Escuchar sincronización inicial (cuando entras a una sala que ya está armada)
-    socket.on('room-sync-init', (data) => {
-        console.log("Sincronización inicial recibida:", data);
-        if (data.urlAudio && audioPlayer.src !== data.urlAudio) {
-            isBroadcasting = true;
-            audioPlayer.src = data.urlAudio; // Cambia la canción por la de Cloudinary guardada en Mongo
-            audioPlayer.currentTime = data.currentTime;
-            
-            if (data.estaReproduciendo) {
-                audioPlayer.play().catch(e => console.log("Autoplay bloqueado por el navegador."));
-            }
-            isBroadcasting = false;
-        }
-    });
+                socket.emit('join-room', currentRoom);
+                alert(`Conectado a la sala: ${currentRoom}`);
+            });
 
-    //Escuchar órdenes de reproducción en tiempo real de otros usuarios
-    socket.on('player-broadcast', (data) => {
-        const { action, currentTime, urlAudio } = data;
-        
-        isBroadcasting = true; 
+            //Eventos del socket (cuando se conectan varios, todos responden con socket.emit a la misma sala)
+            audioPlayer.addEventListener('play', () => {
+                if (isBroadcasting) return;
+                socket.emit('player-action', {
+                    roomCode: currentRoom,
+                    action: 'play',
+                    currentTime: audioPlayer.currentTime,
+                });
+            });
 
-        // Si la sala cambió de canción, se actualiza la sesion para todos
-        if (urlAudio && audioPlayer.src !== urlAudio) {
-            audioPlayer.src = urlAudio;
-        }
+            audioPlayer.addEventListener('pause', () => {
+                if (isBroadcasting) return;
+                socket.emit('player-action', {
+                    roomCode: currentRoom,
+                    action: 'pause',
+                    currentTime: audioPlayer.currentTime,
+                });
+            });
 
-        audioPlayer.currentTime = currentTime;
+            //Escuchar sincronización inicial (cuando entras a una sala que ya está armada)
+            socket.on('room-sync-init', (data) => {
+                console.log('Sincronización inicial recibida:', data);
+                if (data.urlAudio && audioPlayer.src !== data.urlAudio) {
+                    isBroadcasting = true;
+                    audioPlayer.src = data.urlAudio; // Cambia la canción por la de Cloudinary guardada en Mongo
+                    audioPlayer.currentTime = data.currentTime;
 
-        if (action === 'play') {
-            audioPlayer.play().catch(err => console.log("Espera a que el usuario interactúe con la página primero."));
-        } else if (action === 'pause') {
-            audioPlayer.pause();
-        }
+                    if (data.estaReproduciendo) {
+                        audioPlayer.play().catch((e) => console.log('Autoplay bloqueado por el navegador.'));
+                    }
+                    isBroadcasting = false;
+                }
+            });
 
-        isBroadcasting = false; 
-    });
-</script>
-</body>
+            //Escuchar órdenes de reproducción en tiempo real de otros usuarios
+            socket.on('player-broadcast', (data) => {
+                const { action, currentTime, urlAudio } = data;
+
+                isBroadcasting = true;
+
+                // Si la sala cambió de canción, se actualiza la sesion para todos
+                if (urlAudio && audioPlayer.src !== urlAudio) {
+                    audioPlayer.src = urlAudio;
+                }
+
+                audioPlayer.currentTime = currentTime;
+
+                if (action === 'play') {
+                    audioPlayer
+                        .play()
+                        .catch((err) => console.log('Espera a que el usuario interactúe con la página primero.'));
+                } else if (action === 'pause') {
+                    audioPlayer.pause();
+                }
+
+                isBroadcasting = false;
+            });
+        </script>
+    </body>
 </html>

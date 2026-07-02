@@ -3,7 +3,7 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
-import mongoose from 'mongoose'; 
+import mongoose from 'mongoose';
 
 import trackRoutes from './routes/trackRoutes';
 import roomRoutes from './routes/roomRoutes';
@@ -26,13 +26,14 @@ app.use('/api/rooms', roomRoutes);
 // Conexión a MongoDB
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
-    console.error("Error: MONGODB_URI no está definida en el .env");
+    console.error('Error: MONGODB_URI no está definida en el .env');
     process.exit(1);
 }
 
-mongoose.connect(mongoUri)
+mongoose
+    .connect(mongoUri)
     .then(() => console.log('🍃 Conectado exitosamente a MongoDB'))
-    .catch(err => console.error('Error al conectar a MongoDB:', err));
+    .catch((err) => console.error('Error al conectar a MongoDB:', err));
 
 // Inicializar Sockets
 initAudioSocket(io);

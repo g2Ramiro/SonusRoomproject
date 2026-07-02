@@ -6,7 +6,7 @@ import multer from 'multer';
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 // Configuracion del almacenamiento
@@ -16,9 +16,9 @@ const storage = new CloudinaryStorage({
         return {
             folder: 'sonusroom_tracks',
             resource_type: 'video', //Formatos mp3 que representan los audios
-            format: 'mp3'
+            format: 'mp3',
         };
-    }
+    },
 });
 
 //Uso de multer para cargar datos del archivo

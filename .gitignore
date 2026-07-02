@@ -1,4 +1,23 @@
 # Dependencias
 node_modules/
+
+# Build
 dist/
-# Variables de entorno secretas
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Caché y cobertura
+.eslintcache
+coverage/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

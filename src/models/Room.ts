@@ -11,38 +11,41 @@ export interface IRoom extends Document {
     updatedAt: Date;
 }
 
-const RoomSchema = new Schema<IRoom>({
-    nombreSala: { 
-        type: String, 
-        required: [true, 'El nombre de la sala es obligatorio'],
-        trim: true 
+const RoomSchema = new Schema<IRoom>(
+    {
+        nombreSala: {
+            type: String,
+            required: [true, 'El nombre de la sala es obligatorio'],
+            trim: true,
+        },
+        codigoAcceso: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
+        },
+        host: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+        cancionActual: {
+            type: Schema.Types.ObjectId,
+            ref: 'Track',
+            default: null,
+        },
+        estaReproduciendo: {
+            type: Boolean,
+            default: false,
+        },
+        usuariosActivos: {
+            type: [String],
+            default: [],
+        },
     },
-    codigoAcceso: { 
-        type: String, 
-        required: true, 
-        unique: true,
-        trim: true 
+    {
+        timestamps: true,
     },
-    host: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
-    },
-    cancionActual: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Track', 
-        default: null 
-    },
-    estaReproduciendo: { 
-        type: Boolean, 
-        default: false 
-    },
-    usuariosActivos: { 
-        type: [String], 
-        default: [] 
-    }
-}, {
-    timestamps: true
-});
+);
 
 export default model<IRoom>('Room', RoomSchema);
