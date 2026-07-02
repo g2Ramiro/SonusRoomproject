@@ -11,6 +11,7 @@ export interface ITrack extends Document {
     updatedAt: Date;
 }
 
+//Schema para base de datos de Mongo
 const TrackSchema = new Schema<ITrack>({
     titulo: { 
         type: String, 
@@ -36,7 +37,7 @@ const TrackSchema = new Schema<ITrack>({
     },
     subidoPor: { 
         type: Schema.Types.ObjectId, 
-        ref: 'User', // Aqui debe ir referencia a User
+        ref: 'User',
         required: true 
     }
 }, {

@@ -3,9 +3,10 @@ import { Schema, model, Document } from 'mongoose';
 export interface IRoom extends Document {
     nombreSala: string;
     codigoAcceso: string;
-    host: Schema.Types.ObjectId;
+    host: Schema.Types.ObjectId; 
     cancionActual: Schema.Types.ObjectId | null;
     estaReproduciendo: boolean;
+    colaReproduccion: Schema.Types.ObjectId[];
     usuariosActivos: string[];
     createdAt: Date;
     updatedAt: Date;
@@ -25,7 +26,7 @@ const RoomSchema = new Schema<IRoom>({
     },
     host: { 
         type: Schema.Types.ObjectId, 
-        ref: 'User', 
+        ref: 'User',
         required: true 
     },
     cancionActual: { 
@@ -37,12 +38,18 @@ const RoomSchema = new Schema<IRoom>({
         type: Boolean, 
         default: false 
     },
+    colaReproduccion:[ {
+        type: Schema.Types.ObjectId,
+        ref: 'Track',
+        default: []
+
+    }],
     usuariosActivos: { 
         type: [String], 
         default: [] 
     }
 }, {
-    timestamps: true
+    timestamps: true 
 });
 
 export default model<IRoom>('Room', RoomSchema);

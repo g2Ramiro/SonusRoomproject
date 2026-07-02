@@ -1,10 +1,38 @@
-const mongoose = require('mongoose');
+import {Schema, model, Document} from 'mongoose';
 
-const UserSchema = new mongoose.Schema({
-    googleId: { type: String, required: true, unique: true },
-    nombre: { type: String, required: true },
-    correo: { type: String, required: true, unique: true },
-    avatar: { type: String }
-}, { timestamps: true });
+export interface IUser extends Document{
+    googleId: string;
+    nombre: string;
+    email: string;
+    avatar?: string;
+    createdAt: Date;
+}
 
-module.exports = mongoose.model('User', UserSchema);
+//Schema para base de datos de Mongo
+const userSchema = new Schema<IUser>(
+    {
+        googleId: { 
+        type: String, 
+        required: true, 
+        unique: true 
+    },
+    nombre: { 
+        type: String, 
+        required: true 
+    },
+    email: { 
+        type: String, 
+        required: true, 
+        unique: true 
+    },
+    avatar: { 
+        type: String 
+    },
+    createdAt: { 
+        type: Date, 
+        default: Date.now 
+    }
+    }
+)
+
+export default model<IUser>('User',userSchema);

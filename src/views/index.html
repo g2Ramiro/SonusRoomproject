@@ -2,95 +2,84 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SonusRoom Prototipo Sockets</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SonusRoom - Dashboard</title>
+    <link rel="icon" href="data:,">
+    <style> 
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
+        button { background-color: #1DB954; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #btnNext { background-color: #007bff; margin-top: 10px; }
+        audio { width: 100%; margin-top: 10px; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #e9ecef; padding: 10px; margin: 5px 0; border-radius: 4px; font-size: 14px; }
+        #estado-subida { font-size: 13px; color: #666; font-style: italic; }
+    </style>
 </head>
 <body>
-    <h1>SonusRoom - Prueba de Sockets</h1>
-    
-    <div>
-        <label for="roomInput">ID de Sala:</label>
-        <input type="text" id="roomInput" value="sala-verano-iteso">
-        <button id="btnJoin">Conectarse a la Sala</button>
+
+<div class="container">
+    <h2>🎵SonusRoom Dashboard</h2>
+
+    <div class="section">
+        <h3>Gestión de Salas</h3>
+        
+        <div style="margin-bottom: 15px;">
+            <label for="roomInput"><strong>Unirse a Sala (Código):</strong></label>
+            <input type="text" id="roomInput" placeholder="Ej: SALA-TEST" autocomplete="off">
+            <button id="btnJoin">Conectarse a Sala</button>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+
+        <div style="margin-bottom: 15px;">
+            <label for="newRoomNameInput"><strong>Nombre de la Nueva Sala:</strong></label>
+            <input type="text" id="newRoomNameInput" placeholder="Ej: Mi Sala Premium" autocomplete="off">
+            <button id="btnCreateRoom" style="background-color: #007bff;">Crear Sala Nueva</button>
+        </div>
+
+        <div id="danger-zone" style="display: none; margin-top: 10px;">
+            <button id="btnDeleteRoom" style="background-color: #dc3545; width: 100%;">🗑️ Borrar y Cerrar Sala Actual</button>
+        </div>
     </div>
 
-    <br><br>
+    <div class="section">
+        <h3>📻 Reproductor Principal</h3>
+        <audio id="audioPlayer" controls></audio>
+        <br>
+        <button id="btnNext">⏭️ Siguiente canción</button>
+    </div>
 
-    <audio id="audioPlayer" controls src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></textarea></audio>
-
-    <script>
-    const socket = io();
-    const audioPlayer = document.getElementById('audioPlayer');
-    const roomInput = document.getElementById('roomInput');
-    const btnJoin = document.getElementById('btnJoin');
-    
-    let currentRoom = "";
-    let isBroadcasting = false; // Bandera para evitar bucles infinitos
-
-    // Conexion a sala
-    btnJoin.addEventListener('click', () => {
-        currentRoom = roomInput.value.trim();
-        if (!currentRoom) return alert("Por favor ingresa un código de sala válido.");
-        
-        socket.emit('join-room', currentRoom);
-        alert(`Conectado a la sala: ${currentRoom}`);
-    });
-
-    //Eventos del socket (cuando se conectan varios, todos responden con socket.emit a la misma sala)
-    audioPlayer.addEventListener('play', () => {
-        if (isBroadcasting) return;
-        socket.emit('player-action', {
-            roomCode: currentRoom,
-            action: 'play',
-            currentTime: audioPlayer.currentTime
-        });
-    });
-
-    audioPlayer.addEventListener('pause', () => {
-        if (isBroadcasting) return;
-        socket.emit('player-action', {
-            roomCode: currentRoom,
-            action: 'pause',
-            currentTime: audioPlayer.currentTime
-        });
-    });
-
-    //Escuchar sincronización inicial (cuando entras a una sala que ya está armada)
-    socket.on('room-sync-init', (data) => {
-        console.log("Sincronización inicial recibida:", data);
-        if (data.urlAudio && audioPlayer.src !== data.urlAudio) {
-            isBroadcasting = true;
-            audioPlayer.src = data.urlAudio; // Cambia la canción por la de Cloudinary guardada en Mongo
-            audioPlayer.currentTime = data.currentTime;
+    <div class="section">
+        <h3>Añadir Canción a la Fila</h3>
+        <form id="form-subir-audio" enctype="multipart/form-data">
+            <label>Nombre de la Canción:</label>
+            <input type="text" id="nombreCancion" required placeholder="Ej: Ultraman">
             
-            if (data.estaReproduciendo) {
-                audioPlayer.play().catch(e => console.log("Autoplay bloqueado por el navegador."));
-            }
-            isBroadcasting = false;
-        }
-    });
+            <label>Artista:</label>
+            <input type="text" id="artista" required placeholder="Ej: Oliver Tree">
+            
+            <label>Archivo de Audio (.mp3):</label>
+            <input type="file" id="archivo-audio" accept="audio/mp3" required>
+            
+            <button type="submit">⬆️ Subir y Formar</button>
+        </form>
+        <p id="estado-subida"></p>
+    </div>
 
-    //Escuchar órdenes de reproducción en tiempo real de otros usuarios
-    socket.on('player-broadcast', (data) => {
-        const { action, currentTime, urlAudio } = data;
-        
-        isBroadcasting = true; 
+    <div class="section">
+        <h3>⏳ Fila de Espera (Cola)</h3>
+        <ul id="lista-cola">
+            <li>No has ingresado a ninguna sala todavía.</li>
+        </ul>
+    </div>
+</div>
 
-        // Si la sala cambió de canción, se actualiza la sesion para todos
-        if (urlAudio && audioPlayer.src !== urlAudio) {
-            audioPlayer.src = urlAudio;
-        }
+<script src="/socket.io/socket.io.js"></script>
+<script src="/room.js"></script>
 
-        audioPlayer.currentTime = currentTime;
-
-        if (action === 'play') {
-            audioPlayer.play().catch(err => console.log("Espera a que el usuario interactúe con la página primero."));
-        } else if (action === 'pause') {
-            audioPlayer.pause();
-        }
-
-        isBroadcasting = false; 
-    });
-</script>
 </body>
 </html>
