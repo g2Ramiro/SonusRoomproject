@@ -1,13 +1,22 @@
-const mongoose = require('mongoose');
+import { Schema, model, Document } from 'mongoose';
 
-const PlaylistSchema = new mongoose.Schema(
+export interface IPlaylist extends Document {
+    nombre: string;
+    descripcion?: string;
+    creador: Schema.Types.ObjectId;
+    canciones: Schema.Types.ObjectId[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const PlaylistSchema = new Schema<IPlaylist>(
     {
         nombre: { type: String, required: true },
         descripcion: { type: String },
-        creador: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        canciones: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }],
+        creador: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        canciones: [{ type: Schema.Types.ObjectId, ref: 'Track' }],
     },
     { timestamps: true },
 );
 
-module.exports = mongoose.model('Playlist', PlaylistSchema);
+export default model<IPlaylist>('Playlist', PlaylistSchema);

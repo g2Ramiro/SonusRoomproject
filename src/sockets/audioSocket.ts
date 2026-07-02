@@ -1,5 +1,28 @@
 import { Server, Socket } from 'socket.io';
 import Room from '../models/Room';
+import { ITrack } from '../models/Track';
+
+interface PlayerActionData {
+    roomCode?: string;
+    roomId?: string;
+    action: 'play' | 'pause';
+    currentTime: number;
+    trackId?: string;
+}
+
+interface RoomPlayerUpdate {
+    estaReproduciendo: boolean;
+    cancionActual?: string;
+}
+
+const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : 'Error desconocido');
+
+const getPopulatedTrack = (cancionActual: unknown): ITrack | null => {
+    if (cancionActual && typeof cancionActual === 'object' && 'urlAudio' in cancionActual) {
+        return cancionActual as ITrack;
+    }
+    return null;
+};
 
 export default (io: Server) => {
     io.on('connection', (socket: Socket) => {
@@ -12,27 +35,33 @@ export default (io: Server) => {
 
             try {
                 const roomData = await Room.findOne({ codigoAcceso: roomCode }).populate('cancionActual');
-                if (roomData && roomData.cancionActual) {
+                const track = roomData ? getPopulatedTrack(roomData.cancionActual) : null;
+
+                if (track) {
                     socket.emit('room-sync-init', {
-                        urlAudio: (roomData.cancionActual as any).urlAudio,
-                        estaReproduciendo: roomData.estaReproduciendo,
+                        urlAudio: track.urlAudio,
+                        estaReproduciendo: roomData?.estaReproduciendo,
                         currentTime: 0,
                     });
                 }
-            } catch (error: any) {
-                console.error('Error al inicializar sincronización de sala:', error.message);
+            } catch (error: unknown) {
+                console.error('Error al inicializar sincronización de sala:', getErrorMessage(error));
             }
         });
 
         //Controlar las acciones del reproductor sincronizadas con MongoDB
-        socket.on('player-action', async (data: any) => {
+        socket.on('player-action', async (data: PlayerActionData) => {
             const roomCode = data.roomCode || data.roomId;
             const { action, currentTime, trackId } = data;
+
+            if (!roomCode) {
+                return;
+            }
 
             console.log(`Acción [${action}] en sala [${roomCode}] - Tiempo: ${currentTime}s`);
 
             try {
-                const updateData: any = { estaReproduciendo: action === 'play' };
+                const updateData: RoomPlayerUpdate = { estaReproduciendo: action === 'play' };
 
                 if (trackId) {
                     updateData.cancionActual = trackId;
@@ -43,14 +72,16 @@ export default (io: Server) => {
                 }).populate('cancionActual');
 
                 if (updatedRoom) {
+                    const track = getPopulatedTrack(updatedRoom.cancionActual);
+
                     socket.to(roomCode).emit('player-broadcast', {
                         action,
                         currentTime,
-                        urlAudio: updatedRoom.cancionActual ? (updatedRoom.cancionActual as any).urlAudio : null,
+                        urlAudio: track?.urlAudio ?? null,
                     });
                 }
-            } catch (error: any) {
-                console.error('Error al guardar el estado del player en Mongo:', error.message);
+            } catch (error: unknown) {
+                console.error('Error al guardar el estado del player en Mongo:', getErrorMessage(error));
             }
         });
 

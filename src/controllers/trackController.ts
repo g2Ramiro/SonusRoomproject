@@ -1,12 +1,17 @@
 import { Request, Response } from 'express';
 import Track from '../models/Track';
 
-// Interfaz de Multer para el contenido tecnico del archivo
-interface MulterRequest extends Request {
-    file?: any;
+interface CloudinaryFile extends Express.Multer.File {
+    path: string;
 }
 
-//Agregar una nueva canción subiendo el archivo real a la nube de Cloudinary
+interface MulterRequest extends Request {
+    file?: CloudinaryFile;
+}
+
+const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : 'Error desconocido');
+
+//Agregar una nueva canci?n subiendo el archivo real a la nube de Cloudinary
 export const createTrack = async (req: Request, res: Response): Promise<void> => {
     try {
         const multerReq = req as MulterRequest;
@@ -32,21 +37,21 @@ export const createTrack = async (req: Request, res: Response): Promise<void> =>
 
         const savedTrack = await newTrack.save();
         res.status(201).json({
-            mensaje: 'Canción subida registrada con éxito',
+            mensaje: 'Canci?n subida registrada con ?xito',
             track: savedTrack,
         });
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al procesar la subida del archivo', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al procesar la subida del archivo', detalles: getErrorMessage(error) });
     }
 };
 
 //Consultar canciones registradas
-export const getAllTracks = async (req: Request, res: Response): Promise<void> => {
+export const getAllTracks = async (_req: Request, res: Response): Promise<void> => {
     try {
         const tracks = await Track.find();
         res.status(200).json(tracks);
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al obtener las canciones', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al obtener las canciones', detalles: getErrorMessage(error) });
     }
 };
 
@@ -55,39 +60,39 @@ export const getTrackById = async (req: Request, res: Response): Promise<void> =
     try {
         const track = await Track.findById(req.params.id);
         if (!track) {
-            res.status(404).json({ mensaje: 'Canción no encontrada' });
+            res.status(404).json({ mensaje: 'Canci?n no encontrada' });
             return;
         }
         res.status(200).json(track);
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al buscar la canción', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al buscar la canci?n', detalles: getErrorMessage(error) });
     }
 };
 
-//Modificar datos de una canción
+//Modificar datos de una canci?n
 export const updateTrack = async (req: Request, res: Response): Promise<void> => {
     try {
         const updatedTrack = await Track.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedTrack) {
-            res.status(404).json({ mensaje: 'Canción no encontrada' });
+            res.status(404).json({ mensaje: 'Canci?n no encontrada' });
             return;
         }
-        res.status(200).json({ mensaje: 'Canción actualizada', track: updatedTrack });
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al actualizar la canción', detalles: error.message });
+        res.status(200).json({ mensaje: 'Canci?n actualizada', track: updatedTrack });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al actualizar la canci?n', detalles: getErrorMessage(error) });
     }
 };
 
-//Eliminar un registro de canción de la base de datos
+//Eliminar un registro de canci?n de la base de datos
 export const deleteTrack = async (req: Request, res: Response): Promise<void> => {
     try {
         const deletedTrack = await Track.findByIdAndDelete(req.params.id);
         if (!deletedTrack) {
-            res.status(404).json({ mensaje: 'Canción no encontrada' });
+            res.status(404).json({ mensaje: 'Canci?n no encontrada' });
             return;
         }
-        res.status(200).json({ mensaje: 'Canción eliminada correctamente' });
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al eliminar la canción', detalles: error.message });
+        res.status(200).json({ mensaje: 'Canci?n eliminada correctamente' });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al eliminar la canci?n', detalles: getErrorMessage(error) });
     }
 };

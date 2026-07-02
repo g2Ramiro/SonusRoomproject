@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import Room from '../models/Room';
 
+const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : 'Error desconocido');
+
 const generateRoomCode = (): string => {
     //Generar Ids randoms para las salas que se creen
     return 'ROOM-' + Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -27,18 +29,18 @@ export const createRoom = async (req: Request, res: Response): Promise<void> => 
 
         const savedRoom = await newRoom.save();
         res.status(201).json({ mensaje: 'Sala creada exitosamente', sala: savedRoom });
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al crear la sala', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al crear la sala', detalles: getErrorMessage(error) });
     }
 };
 
 //Obtener todas las salas
-export const getAllRooms = async (req: Request, res: Response): Promise<void> => {
+export const getAllRooms = async (_req: Request, res: Response): Promise<void> => {
     try {
         const rooms = await Room.find().populate('cancionActual');
         res.status(200).json(rooms);
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al listar las salas', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al listar las salas', detalles: getErrorMessage(error) });
     }
 };
 
@@ -58,8 +60,8 @@ export const updateRoomState = async (req: Request, res: Response): Promise<void
             return;
         }
         res.status(200).json({ mensaje: 'Estado de sala actualizado', sala: updatedRoom });
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al actualizar la sala', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al actualizar la sala', detalles: getErrorMessage(error) });
     }
 };
 
@@ -72,7 +74,7 @@ export const deleteRoom = async (req: Request, res: Response): Promise<void> => 
             return;
         }
         res.status(200).json({ mensaje: 'Sala cerrada y eliminada correctamente' });
-    } catch (error: any) {
-        res.status(500).json({ error: 'Error al eliminar la sala', detalles: error.message });
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Error al eliminar la sala', detalles: getErrorMessage(error) });
     }
 };

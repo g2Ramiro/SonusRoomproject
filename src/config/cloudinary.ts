@@ -12,7 +12,7 @@ cloudinary.config({
 // Configuracion del almacenamiento
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: async (req, file) => {
+    params: async () => {
         return {
             folder: 'sonusroom_tracks',
             resource_type: 'video', //Formatos mp3 que representan los audios
