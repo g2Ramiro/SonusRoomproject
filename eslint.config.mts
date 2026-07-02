@@ -6,7 +6,7 @@ import prettier from 'eslint-config-prettier';
 
 export default defineConfig([
     {
-        ignores: ['dist/**', 'node_modules/**'],
+        ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'jest.config.js'],
     },
     {
         files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
@@ -15,5 +15,14 @@ export default defineConfig([
         languageOptions: { globals: globals.node },
     },
     ...tseslint.configs.recommended,
+    {
+        files: ['**/*.{test,spec}.ts', '**/__tests__/**/*.ts'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+                ...globals.jest,
+            },
+        },
+    },
     prettier,
 ]);
