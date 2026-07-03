@@ -215,3 +215,7 @@ npm run test
 ```
 
 Los endpoints dummy (`/api/health`, `/api/dummy`) tienen cobertura de tests con Jest y Supertest.
+
+El marco de trabajo implementado al momento ese el siguiente:
+<img width="763" height="882" alt="image" src="https://github.com/user-attachments/assets/93050ace-c670-49a4-8cf3-fdbad450015f" />
+
