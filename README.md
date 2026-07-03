@@ -1,6 +1,10 @@
-# SonusRoom
+# SonusRoom (SoundSync)
 
 Backend API para salas de música compartidas con sincronización en tiempo real.
+
+**SoundSync** es una aplicación web enfocada en la reproducción y compartición de contenido de audio en tiempo real. Los usuarios pueden subir podcasts, música independiente o grabaciones personales y crear **Salas de Escucha** donde múltiples personas escuchan el mismo contenido sincronizado mientras interactúan mediante chat.
+
+**Integrantes:** Ramiro Santos Rojas · Luis Alberto Carrillo Parra
 
 ## Tecnologías y Herramientas Utilizadas hasta el momento
 
@@ -114,6 +118,81 @@ src/
 ├── views/              # Prototipo HTML para pruebas de sockets
 └── __tests__/          # Tests con Jest
 ```
+
+## Base de datos
+
+La persistencia se realiza en **MongoDB** (local en desarrollo / **MongoDB Atlas** en producción) mediante **Mongoose**. El diagrama refleja las colecciones implementadas en el repositorio y la entidad de **chat** planificada según la visión del proyecto.
+
+```mermaid
+erDiagram
+    USER ||--o{ TRACK : "sube (subidoPor)"
+    USER ||--o{ ROOM : "hospeda (host)"
+    USER ||--o{ MESSAGE : "envía (planificado)"
+    ROOM ||--o| TRACK : "reproduce (cancionActual)"
+    ROOM }o--o{ TRACK : "cola (tracks[])"
+    ROOM ||--o{ MESSAGE : "contiene (planificado)"
+
+    USER {
+        ObjectId _id PK
+        string googleId UK "Google OAuth"
+        string nombre
+        string correo UK
+        string avatar
+        date createdAt
+        date updatedAt
+    }
+
+    TRACK {
+        ObjectId _id PK
+        string titulo
+        string artista
+        string urlAudio "Cloudinary"
+        number duracion
+        string letra
+        ObjectId subidoPor FK
+        date createdAt
+        date updatedAt
+    }
+
+    ROOM {
+        ObjectId _id PK
+        string nombreSala
+        string codigoAcceso UK "ej. ROOM-6WF9"
+        ObjectId host FK
+        ObjectId[] tracks FK "cola de reproducción"
+        ObjectId cancionActual FK "nullable"
+        boolean estaReproduciendo
+        string[] usuariosActivos "socket IDs"
+        date createdAt
+        date updatedAt
+    }
+
+    MESSAGE {
+        ObjectId _id PK
+        ObjectId sala FK "planificado"
+        ObjectId usuario FK "planificado"
+        string contenido "planificado"
+        date createdAt "planificado"
+    }
+```
+
+### Relaciones principales
+
+| Colección | Descripción | Estado |
+|-----------|-------------|--------|
+| **User** | Usuario autenticado vía Google OAuth (`googleId`, `correo`, `avatar`) | Implementado |
+| **Track** | Audio subido a Cloudinary (música, podcasts, grabaciones) | Implementado |
+| **Room** | Sala de escucha con cola de tracks (`tracks[]`), reproducción sincronizada y estado en tiempo real | Implementado (`tracks[]` planificado en modelo) |
+| **Message** | Mensajes de chat dentro de una sala | Planificado |
+
+### Servicios externos vinculados al modelo
+
+| Servicio | Uso en la base de datos |
+|----------|-------------------------|
+| **Cloudinary** | Almacena el archivo de audio; `Track.urlAudio` guarda la URL |
+| **Google OAuth** | Identifica al usuario; `User.googleId` es la clave única |
+| **Socket.IO** | Sincroniza reproducción en `Room`; `usuariosActivos` rastrea conexiones en vivo |
+| **APIs de metadata** *(Spotify, Last.fm, Listen Notes)* | Enriquecimiento futuro de `Track` (portada, género, autor) |
 
 ## Pruebas con Postman
 
