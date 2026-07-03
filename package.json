@@ -5,7 +5,8 @@
   "main": "dist/app.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/app.ts",
-    "build": "tsc",
+    "build": "tsc && npm run copy:assets",
+    "copy:assets": "node -e \"require('fs').cpSync('src/views','dist/views',{recursive:true})\"",
     "start": "node dist/app.js",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -42,6 +43,7 @@
     "globals": "^17.7.0",
     "jest": "^30.4.2",
     "jiti": "^2.7.0",
+    "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.9.4",
     "supertest": "^7.2.2",

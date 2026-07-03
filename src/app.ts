@@ -18,15 +18,22 @@ if (!mongoUri) {
     process.exit(1);
 }
 
-mongoose
-    .connect(mongoUri)
-    .then(() => console.log('🍃 Conectado exitosamente a MongoDB'))
-    .catch((err) => console.error('Error al conectar a MongoDB:', err));
+const startServer = async (): Promise<void> => {
+    try {
+        await mongoose.connect(mongoUri);
+        console.log('🍃 Conectado exitosamente a MongoDB');
 
-initAudioSocket(io);
+        initAudioSocket(io);
 
-server.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+        server.listen(PORT, () => {
+            console.log(`Servidor corriendo en http://localhost:${PORT}`);
+        });
+    } catch (err) {
+        console.error('Error al conectar a MongoDB:', err);
+        process.exit(1);
+    }
+};
+
+void startServer();
 
 export { app, createApp };
