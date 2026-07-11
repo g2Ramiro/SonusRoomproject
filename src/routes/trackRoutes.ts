@@ -4,7 +4,6 @@ import uploadCloud from '../config/cloudinary';
 
 const router = Router();
 
-// Usamos uploadCloud.single('file') para interceptar el archivo multimedia
 router.post('/', uploadCloud.single('file'), trackController.createTrack);
 router.get('/', trackController.getAllTracks);
 router.get('/:id', trackController.getTrackById);

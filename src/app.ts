@@ -1,17 +1,16 @@
-import 'dotenv/config';
+import 'dotenv/config'; // Carga el .env
+import passport from 'passport';
 import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
-
-import { createApp } from './createApp';
+import { createApp, sessionMiddleware } from './createApp'; // Importamos sessionMiddleware aquí
 import initAudioSocket from './sockets/audioSocket';
 
 const app = createApp();
 const server = http.createServer(app);
-const io = new Server(server);
-
 const PORT = process.env.PORT || 3000;
 
+// Conexión a MongoDB
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
     console.error('Error: MONGODB_URI no está definida en el .env');
@@ -23,6 +22,27 @@ const startServer = async (): Promise<void> => {
         await mongoose.connect(mongoUri);
         console.log('🍃 Conectado exitosamente a MongoDB');
 
+        const io = new Server(server, {
+            cors: {
+                origin: "http://localhost:3000", 
+                credentials: true
+            }
+        });
+
+        // Middlewares de sesión con Socket.io
+        io.use((socket, next) => {
+            sessionMiddleware(socket.request as any, {} as any, next as any);
+        });
+
+        io.use((socket, next) => {
+            passport.initialize()(socket.request as any, {} as any, next as any);
+        });
+
+        io.use((socket, next) => {
+            passport.session()(socket.request as any, {} as any, next as any);
+        });
+
+        // Inicializar la lógica de WebSocket para el audio
         initAudioSocket(io);
 
         server.listen(PORT, () => {
