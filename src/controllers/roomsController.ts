@@ -54,9 +54,25 @@ export const updateRoomState = async (req: Request, res: Response): Promise<void
     try {
         const { cancionActual, estaReproduciendo } = req.body;
 
+        if (cancionActual === undefined && estaReproduciendo === undefined) {
+            res.status(400).json({
+                error: "Debes enviar cancionActual y/o estaReproduciendo para actualizar la sala"
+            });
+            return;
+        }
+
+        if (estaReproduciendo !== undefined && typeof estaReproduciendo !== 'boolean') {
+            res.status(400).json({ error: "estaReproduciendo debe ser un booleano" });
+            return;
+        }
+
+        const updates: Record<string, unknown> = {};
+        if (cancionActual !== undefined) updates.cancionActual = cancionActual;
+        if (estaReproduciendo !== undefined) updates.estaReproduciendo = estaReproduciendo;
+
         const updatedRoom = await Room.findOneAndUpdate(
             { codigoAcceso: req.params.codigo },
-            { cancionActual, estaReproduciendo },
+            updates,
             { new: true }
         );
 
@@ -90,6 +106,11 @@ export const addQueue = async (req: Request, res: Response): Promise<void> => {
         const { nombreCancion, artista } = req.body;
         const usuarioLogueado = req.user as any;
 
+        if (!nombreCancion || !String(nombreCancion).trim()) {
+            res.status(400).json({ error: "El nombre de la canción es requerido" });
+            return;
+        }
+
         if (!req.file) {
             res.status(400).json({ error: "No se proporcionó ningún archivo de audio válido" });
             return;
@@ -97,8 +118,8 @@ export const addQueue = async (req: Request, res: Response): Promise<void> => {
 
         //Crear el documento del Track en MongoDB
         const nuevoTrack = new Track({
-            titulo: nombreCancion || req.file.originalname,
-            artista: artista || "Artista Desconocido",
+            titulo: String(nombreCancion).trim(),
+            artista: (artista && String(artista).trim()) || "Artista Desconocido",
             urlAudio: req.file.path,
             subidoPor: usuarioLogueado._id
         });
@@ -124,5 +145,43 @@ export const addQueue = async (req: Request, res: Response): Promise<void> => {
 
     } catch (error: any) {
         res.status(500).json({ error: "Error al añadir la canción a la cola", detalles: error.message });
+    }
+};
+
+// Añadir un track ya existente a la cola de la sala
+export const addExistingTrackToQueue = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { codigo } = req.params;
+        const { trackId } = req.body;
+
+        if (!trackId || !String(trackId).trim()) {
+            res.status(400).json({ error: "El trackId es requerido" });
+            return;
+        }
+
+        const track = await Track.findById(trackId);
+        if (!track) {
+            res.status(404).json({ error: "La canción especificada no existe" });
+            return;
+        }
+
+        const salaActualizada = await Room.findOneAndUpdate(
+            { codigoAcceso: codigo },
+            { $push: { colaReproduccion: track._id } },
+            { new: true }
+        ).populate('colaReproduccion');
+
+        if (!salaActualizada) {
+            res.status(404).json({ error: "La sala especificada no existe" });
+            return;
+        }
+
+        res.status(200).json({
+            mensaje: "Canción añadida a la fila de espera",
+            track,
+            colaActual: salaActualizada.colaReproduccion
+        });
+    } catch (error: any) {
+        res.status(500).json({ error: "Error al añadir el track a la cola", detalles: error.message });
     }
 };

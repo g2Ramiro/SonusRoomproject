@@ -7,8 +7,9 @@ const router = Router();
 
 router.get('/', roomController.getAllRooms);
 router.post('/', isAuthorized, roomController.createRoom);
-router.put('/:codigo', roomController.updateRoomState);
-router.delete('/:codigo', roomController.deleteRoom);
+router.put('/:codigo', isAuthorized, roomController.updateRoomState);
+router.delete('/:codigo', isAuthorized, roomController.deleteRoom);
 router.post('/:codigo/upload', isAuthorized, uploadCloud.single('audio'), roomController.addQueue);
+router.post('/:codigo/queue', isAuthorized, roomController.addExistingTrackToQueue);
 
 export default router;

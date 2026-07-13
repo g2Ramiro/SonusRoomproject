@@ -16,7 +16,6 @@
         audio { width: 100%; margin-top: 10px; }
         ul { list-style-type: none; padding: 0; }
         li { background: #e9ecef; padding: 10px; margin: 5px 0; border-radius: 4px; font-size: 14px; }
-        #estado-subida { font-size: 13px; color: #666; font-style: italic; }
     </style>
 </head>
 <body>
@@ -54,26 +53,43 @@
     </div>
 
     <div class="section">
-        <h3>Añadir Canción a la Fila</h3>
-        <form id="form-subir-audio" enctype="multipart/form-data">
-            <label>Nombre de la Canción:</label>
-            <input type="text" id="nombreCancion" required placeholder="Ej: Ultraman">
-            
-            <label>Artista:</label>
-            <input type="text" id="artista" required placeholder="Ej: Oliver Tree">
-            
-            <label>Archivo de Audio (.mp3):</label>
-            <input type="file" id="archivo-audio" accept="audio/mp3" required>
-            
-            <button type="submit">⬆️ Subir y Formar</button>
-        </form>
-        <p id="estado-subida"></p>
-    </div>
-
-    <div class="section">
         <h3>⏳ Fila de Espera (Cola)</h3>
         <ul id="lista-cola">
             <li>No has ingresado a ninguna sala todavía.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h3>Biblioteca de Canciones</h3>
+        <p style="font-size: 13px; color: #666;">Crea canciones aquí y usa <strong>A la fila</strong> cuando estés conectado a una sala.</p>
+        <form id="form-crear-track" enctype="multipart/form-data" style="margin-bottom: 15px;">
+            <label>Título:</label>
+            <input type="text" id="trackTitulo" required placeholder="Ej: Ultraman">
+
+            <label>Artista:</label>
+            <input type="text" id="trackArtista" placeholder="Ej: Oliver Tree">
+
+            <label>Archivo de Audio (.mp3):</label>
+            <input type="file" id="trackFile" accept="audio/mp3,audio/mpeg" required>
+
+            <button type="submit" style="background-color: #007bff;">Crear Track</button>
+        </form>
+        <p id="estado-track" style="font-size: 13px; color: #666; font-style: italic;"></p>
+
+        <div id="form-editar-track" style="display: none; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 4px;">
+            <strong>Editar canción</strong>
+            <input type="hidden" id="editTrackId">
+            <label>Título:</label>
+            <input type="text" id="editTrackTitulo" required>
+            <label>Artista:</label>
+            <input type="text" id="editTrackArtista">
+            <button type="button" id="btnGuardarTrack" style="background-color: #007bff;">Guardar</button>
+            <button type="button" id="btnCancelarEdit" style="background-color: #6c757d; margin-left: 6px;">Cancelar</button>
+        </div>
+
+        <button type="button" id="btnRefreshTracks" style="background-color: #6c757d; margin-bottom: 10px;">Actualizar lista</button>
+        <ul id="lista-tracks">
+            <li>Cargando canciones...</li>
         </ul>
     </div>
 </div>
