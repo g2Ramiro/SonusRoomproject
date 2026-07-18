@@ -104,7 +104,7 @@ Las rutas marcadas con **Auth** usan el middleware `isAuthorized` (responden `40
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| `GET` | `/api/rooms` | No | Listar salas |
+| `GET` | `/api/rooms` | Sí | Listar salas |
 | `POST` | `/api/rooms` | Sí | Crear sala (`{ "nombreSala": "..." }`) → genera `codigoAcceso` tipo `ROOM-XXXX` |
 | `PUT` | `/api/rooms/:codigo` | Sí | Actualizar `cancionActual` y/o `estaReproduciendo` |
 | `DELETE` | `/api/rooms/:codigo` | Sí | Eliminar sala |
@@ -115,8 +115,8 @@ Las rutas marcadas con **Auth** usan el middleware `isAuthorized` (responden `40
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
-| `GET` | `/api/tracks` | No | Listar tracks |
-| `GET` | `/api/tracks/:id` | No | Obtener track por ID |
+| `GET` | `/api/tracks` | Sí | Listar tracks |
+| `GET` | `/api/tracks/:id` | Sí | Obtener track por ID |
 | `POST` | `/api/tracks` | Sí | Crear track (multipart campo `file`). Body: `titulo` (requerido), `artista`, `duracion` |
 | `PUT` | `/api/tracks/:id` | Sí | Actualizar `titulo`, `artista`, `duracion`, `letra` |
 | `DELETE` | `/api/tracks/:id` | Sí | Eliminar track |
