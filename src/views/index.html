@@ -1,102 +1,198 @@
 <!doctype html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SonusRoom - Dashboard</title>
     <link rel="icon" href="data:,">
-    <style> 
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-        input[type="text"], input[type="file"] { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
-        button { background-color: #1DB954; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        #btnNext { background-color: #007bff; margin-top: 10px; }
-        audio { width: 100%; margin-top: 10px; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #e9ecef; padding: 10px; margin: 5px 0; border-radius: 4px; font-size: 14px; }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #btnNext {
+            background-color: #007bff;
+            margin-top: 10px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background: #e9ecef;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h2>🎵SonusRoom Dashboard</h2>
+    <div class="container">
+        <h2>🎵SonusRoom Dashboard</h2>
+        <div style="text-align: right; margin-bottom: 15px;">
+            <span id="user-display" style="font-weight: bold; margin-right: 10px;"></span>
+            <button id="btnLogout" style="background-color: #6c757d; padding: 5px 10px; font-size: 12px;">Cerrar
+                Sesión</button>
+        </div>
 
-    <div class="section">
-        <h3>Gestión de Salas</h3>
+        <div class="section">
+            <h3>Gestión de Salas</h3>
+
+            <div style="margin-bottom: 15px;">
+                <label for="roomInput"><strong>Unirse a Sala (Código):</strong></label>
+                <input type="text" id="roomInput" placeholder="Ej: SALA-TEST" autocomplete="off">
+                <button id="btnJoin">Conectarse a Sala</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+
+            <div style="margin-bottom: 15px;">
+                <label for="newRoomNameInput"><strong>Nombre de la Nueva Sala:</strong></label>
+                <input type="text" id="newRoomNameInput" placeholder="Ej: Mi Sala Premium" autocomplete="off">
+                <button id="btnCreateRoom" style="background-color: #007bff;">Crear Sala Nueva</button>
+            </div>
+
+            <div id="danger-zone" style="display: none; margin-top: 10px;">
+                <button id="btnDeleteRoom" style="background-color: #dc3545; width: 100%;">🗑️ Borrar y Cerrar Sala
+                    Actual</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📻 Reproductor Principal</h3>
+            <audio id="audioPlayer" controls></audio>
+            <br>
+            <button id="btnNext">⏭️ Siguiente canción</button>
+        </div>
+
+        <div class="section">
+            <h3>⏳ Fila de Espera (Cola)</h3>
+            <ul id="lista-cola">
+                <li>No has ingresado a ninguna sala todavía.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>Biblioteca de Canciones</h3>
+            <p style="font-size: 13px; color: #666;">Crea canciones aquí y usa <strong>A la fila</strong> cuando estés
+                conectado a una sala.</p>
+            <form id="form-crear-track" enctype="multipart/form-data" style="margin-bottom: 15px;">
+                <label>Título:</label>
+                <input type="text" id="trackTitulo" required placeholder="Ej: Ultraman">
+
+                <label>Artista:</label>
+                <input type="text" id="trackArtista" placeholder="Ej: Oliver Tree">
+
+                <label>Archivo de Audio (.mp3):</label>
+                <input type="file" id="trackFile" accept="audio/mp3,audio/mpeg" required>
+
+                <button type="submit" style="background-color: #007bff;">Crear Track</button>
+            </form>
+            <p id="estado-track" style="font-size: 13px; color: #666; font-style: italic;"></p>
+
+            <div id="form-editar-track"
+                style="display: none; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 4px;">
+                <strong>Editar canción</strong>
+                <input type="hidden" id="editTrackId">
+                <label>Título:</label>
+                <input type="text" id="editTrackTitulo" required>
+                <label>Artista:</label>
+                <input type="text" id="editTrackArtista">
+                <button type="button" id="btnGuardarTrack" style="background-color: #007bff;">Guardar</button>
+                <button type="button" id="btnCancelarEdit"
+                    style="background-color: #6c757d; margin-left: 6px;">Cancelar</button>
+            </div>
+
+            <button type="button" id="btnRefreshTracks"
+                style="background-color: #6c757d; margin-bottom: 10px;">Actualizar lista</button>
+            <ul id="lista-tracks">
+                <li>Cargando canciones...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/room.js"></script>
+    <script src="/googleAuth.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnLogout = document.getElementById('btnLogout');
         
-        <div style="margin-bottom: 15px;">
-            <label for="roomInput"><strong>Unirse a Sala (Código):</strong></label>
-            <input type="text" id="roomInput" placeholder="Ej: SALA-TEST" autocomplete="off">
-            <button id="btnJoin">Conectarse a Sala</button>
-        </div>
-        
-        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const response = await fetch('/api/auth/logout', { 
+                        method: 'GET',
+                        credentials: 'include'
+                    });
 
-        <div style="margin-bottom: 15px;">
-            <label for="newRoomNameInput"><strong>Nombre de la Nueva Sala:</strong></label>
-            <input type="text" id="newRoomNameInput" placeholder="Ej: Mi Sala Premium" autocomplete="off">
-            <button id="btnCreateRoom" style="background-color: #007bff;">Crear Sala Nueva</button>
-        </div>
-
-        <div id="danger-zone" style="display: none; margin-top: 10px;">
-            <button id="btnDeleteRoom" style="background-color: #dc3545; width: 100%;">🗑️ Borrar y Cerrar Sala Actual</button>
-        </div>
-    </div>
-
-    <div class="section">
-        <h3>📻 Reproductor Principal</h3>
-        <audio id="audioPlayer" controls></audio>
-        <br>
-        <button id="btnNext">⏭️ Siguiente canción</button>
-    </div>
-
-    <div class="section">
-        <h3>⏳ Fila de Espera (Cola)</h3>
-        <ul id="lista-cola">
-            <li>No has ingresado a ninguna sala todavía.</li>
-        </ul>
-    </div>
-
-    <div class="section">
-        <h3>Biblioteca de Canciones</h3>
-        <p style="font-size: 13px; color: #666;">Crea canciones aquí y usa <strong>A la fila</strong> cuando estés conectado a una sala.</p>
-        <form id="form-crear-track" enctype="multipart/form-data" style="margin-bottom: 15px;">
-            <label>Título:</label>
-            <input type="text" id="trackTitulo" required placeholder="Ej: Ultraman">
-
-            <label>Artista:</label>
-            <input type="text" id="trackArtista" placeholder="Ej: Oliver Tree">
-
-            <label>Archivo de Audio (.mp3):</label>
-            <input type="file" id="trackFile" accept="audio/mp3,audio/mpeg" required>
-
-            <button type="submit" style="background-color: #007bff;">Crear Track</button>
-        </form>
-        <p id="estado-track" style="font-size: 13px; color: #666; font-style: italic;"></p>
-
-        <div id="form-editar-track" style="display: none; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 4px;">
-            <strong>Editar canción</strong>
-            <input type="hidden" id="editTrackId">
-            <label>Título:</label>
-            <input type="text" id="editTrackTitulo" required>
-            <label>Artista:</label>
-            <input type="text" id="editTrackArtista">
-            <button type="button" id="btnGuardarTrack" style="background-color: #007bff;">Guardar</button>
-            <button type="button" id="btnCancelarEdit" style="background-color: #6c757d; margin-left: 6px;">Cancelar</button>
-        </div>
-
-        <button type="button" id="btnRefreshTracks" style="background-color: #6c757d; margin-bottom: 10px;">Actualizar lista</button>
-        <ul id="lista-tracks">
-            <li>Cargando canciones...</li>
-        </ul>
-    </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="/room.js"></script>
-
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    } else {
+                        alert('No se pudo cerrar la sesión en el servidor.');
+                    }
+                } catch (err) {
+                    console.error('Error al intentar cerrar sesión:', err);
+                    alert('Error de red al cerrar sesión.');
+                }
+            });
+        }
+    });
+</script>
 </body>
-</html>
 
+</html>

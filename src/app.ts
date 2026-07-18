@@ -3,7 +3,7 @@ import passport from 'passport';
 import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
-import { createApp, sessionMiddleware } from './createApp'; // Importamos sessionMiddleware aquí
+import { createApp, sessionMiddleware } from './createApp';
 import initAudioSocket from './sockets/audioSocket';
 
 const app = createApp();
@@ -42,7 +42,15 @@ const startServer = async (): Promise<void> => {
             passport.session()(socket.request as any, {} as any, next as any);
         });
 
-        // Inicializar la lógica de WebSocket para el audio
+        io.use((socket, next) => {
+            const req = socket.request as any;
+            if (req.user) {
+                return next(); 
+            }
+
+            next(new Error("No autorizado - Sin sesión de Google activa"));
+        });
+
         initAudioSocket(io);
 
         server.listen(PORT, () => {

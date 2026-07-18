@@ -53,7 +53,7 @@ export default (io: Server) => {
                 const updateData: any = { estaReproduciendo: (action === 'play') };
                 
                 if (trackId) {
-                    updateData.cancionActual = trackId; //
+                    updateData.cancionActual = trackId;
                 }
 
                 const updatedRoom = await Room.findOneAndUpdate(
@@ -109,10 +109,10 @@ export default (io: Server) => {
                     // Marca el campo modificado para que Mongoose lo reconozca
                     room.markModified('colaReproduccion');
 
-                    //Guardamos cambios
+                    //Guarda cambios
                     await room.save();
 
-                    //Recuperamos el documento poblado usando tus llaves reales del esquema
+                    //Recupera el documento poblado usando tus llaves reales del esquema
                     const roomActualizada = await Room.findById(room._id)
                         .populate('cancionActual')
                         .populate('colaReproduccion');
@@ -134,7 +134,7 @@ export default (io: Server) => {
                             urlAudio: urlDirectaCloudinary
                         });
 
-                        // Sincronizamos la lista de la cola en el HTML
+                        // Sincroniza la lista de la cola en el HTML
                         io.to(roomCode.toUpperCase()).emit('actualizar-cola-broadcast', {
                             colaReproduccion: roomActualizada.colaReproduccion
                         });

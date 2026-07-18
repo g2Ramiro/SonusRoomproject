@@ -1,14 +1,13 @@
-
 document.addEventListener('DOMContentLoaded', () => {
 
-    //Inicializacion de variables y elementos del DOM
-    const socket = io(); 
+    // Inicializacion de variables y elementos del DOM
+    const socket = io();
     const audioPlayer = document.getElementById('audioPlayer');
     const roomInput = document.getElementById('roomInput');
     const btnJoin = document.getElementById('btnJoin');
     const listaCola = document.getElementById('lista-cola');
     const btnNext = document.getElementById('btnNext');
-    
+
     // Elementos para crear y borrar salas
     const newRoomNameInput = document.getElementById('newRoomNameInput');
     const btnCreateRoom = document.getElementById('btnCreateRoom');
@@ -30,18 +29,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentRoom = "";
     let isBroadcasting = false;
 
-    //Unirse a una sala existente usando el código de acceso
+    // Unirse a una sala existente usando el código de acceso
     if (btnJoin && roomInput) {
         btnJoin.addEventListener('click', () => {
-            currentRoom = roomInput.value.trim().toUpperCase(); 
+            currentRoom = roomInput.value.trim().toUpperCase();
             if (!currentRoom) return alert("Por favor ingresa un código de sala válido.");
 
             socket.emit('join-room', currentRoom);
             alert(`Conectado a la sala: ${currentRoom}`);
-        
+
             if (dangerZone) dangerZone.style.display = 'block';
         });
     }
+
     // Crear una nueva sala y obtener un código de acceso
     if (btnCreateRoom && newRoomNameInput) {
         btnCreateRoom.addEventListener('click', async () => {
@@ -50,21 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 btnCreateRoom.disabled = true;
-                
-                // Petición HTTP POST al backend para crear el registro
+
+                // Petición HTTP POST al backend con credenciales incluidas
                 const response = await fetch('/api/rooms', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombreSala })
+                    body: JSON.stringify({ nombreSala }),
+                    credentials: 'include'
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
                     const codigoGenerado = data.codigoAcceso || (data.room && data.room.codigoAcceso);
-                    
+
                     alert(`¡Sala creada con éxito! 🎉\nCódigo de acceso: ${codigoGenerado}`);
-                    
+
                     // Colocamos el código en el input de unirse automáticamente
                     if (roomInput) roomInput.value = codigoGenerado;
                     newRoomNameInput.value = "";
@@ -84,23 +85,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDeleteRoom) {
         btnDeleteRoom.addEventListener('click', async () => {
             if (!currentRoom) return alert("No estás conectado a ninguna sala activa.");
-            
+
             const confirmar = confirm(`¿Estás seguro de que deseas borrar la sala ${currentRoom}?\nEsto sacará a todos los usuarios.`);
             if (!confirmar) return;
 
             try {
                 btnDeleteRoom.disabled = true;
 
-                // Petición HTTP DELETE al backend usando el código de acceso
+                // Petición HTTP DELETE al backend incluyendo cookies de sesión
                 const response = await fetch(`/api/rooms/${currentRoom}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
                     alert("Sala eliminada correctamente");
-                    
+
                     // Limpiamos los estados locales y reseteamos el reproductor
                     currentRoom = "";
                     if (roomInput) roomInput.value = "";
@@ -109,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         audioPlayer.src = "";
                     }
                     if (dangerZone) dangerZone.style.display = 'none';
-                    
+
                     actualizarInterfazCola([]); // Vaciamos la lista en pantalla
                 } else {
                     alert(`No se pudo borrar la sala: ${data.mensaje || data.error}`);
@@ -123,10 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    //escuchar eventos de play/pause del reproductor y emitirlos a los sockets
+    // Escuchar eventos de play/pause del reproductor y emitirlos a los sockets
     if (audioPlayer) {
         audioPlayer.addEventListener('play', () => {
-            if (isBroadcasting) return; 
+            if (isBroadcasting) return;
             socket.emit('player-action', {
                 roomCode: currentRoom,
                 action: 'play',
@@ -135,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         audioPlayer.addEventListener('pause', () => {
-            if (isBroadcasting) return; 
+            if (isBroadcasting) return;
             socket.emit('player-action', {
                 roomCode: currentRoom,
                 action: 'pause',
@@ -144,13 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    
     // Sincronización inicial al entrar a una sala en curso
     socket.on('room-sync-init', (data) => {
         console.log("Sincronización inicial recibida:", data);
         if (audioPlayer && data.urlAudio && audioPlayer.src !== data.urlAudio) {
             isBroadcasting = true;
-            audioPlayer.src = data.urlAudio; 
+            audioPlayer.src = data.urlAudio;
             audioPlayer.currentTime = data.currentTime;
 
             if (data.estaReproduciendo) {
@@ -160,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    //
+    // Broadcast del reproductor
     socket.on('player-broadcast', (data) => {
         const { action, currentTime, urlAudio } = data;
         if (!audioPlayer) return;
@@ -192,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Botón Siguiente Automático al terminar la canción
     if (audioPlayer) {
         audioPlayer.addEventListener('ended', () => {
-            if (isBroadcasting) return; 
+            if (isBroadcasting) return;
             console.log("Track finalizado. Saltando automáticamente...");
             socket.emit('next-track', { roomCode: currentRoom });
         });
@@ -202,10 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnNext) {
         btnNext.addEventListener('click', () => {
             if (!currentRoom) return alert("No estás en ninguna sala.");
-            
+
             btnNext.disabled = true;
             console.log("Saltando de canción manualmente...");
-            
+
             socket.emit('next-track', { roomCode: currentRoom });
 
             setTimeout(() => {
@@ -218,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function actualizarInterfazCola(cola) {
         if (!listaCola) return;
 
-        listaCola.innerHTML = ''; 
+        listaCola.innerHTML = '';
 
         if (!cola || cola.length === 0) {
             listaCola.innerHTML = '<li>No hay canciones en la cola</li>';
@@ -227,12 +228,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cola.forEach((track) => {
             const li = document.createElement('li');
-            
-            // Si viene poblado por Mongoose (.populate) es un objeto, sino es el ID string plano
+
             if (typeof track === 'object' && track !== null) {
                 const tituloMostrar = track.nombreTrack || track.nombreCancion || track.titulo || "Canción sin título";
                 const artistaMostrar = track.artistaTrack || track.artista || "Artista Desconocido";
-                
+
                 li.innerText = `${tituloMostrar} - ${artistaMostrar}`;
             } else {
                 li.innerText = `ID Canción en cola: ${track}`;
@@ -242,12 +242,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Biblioteca de tracks (/api/tracks)
-
     async function cargarTracks() {
         if (!listaTracks) return;
 
         try {
-            const response = await fetch('/api/tracks');
+            const response = await fetch('/api/tracks', { credentials: 'include' });
             const tracks = await response.json();
 
             if (!response.ok) {
@@ -336,7 +335,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirmar) return;
 
         try {
-            const response = await fetch(`/api/tracks/${id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/tracks/${id}`, { 
+                method: 'DELETE',
+                credentials: 'include'
+            });
             const data = await response.json();
 
             if (response.ok) {
@@ -362,7 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/rooms/${currentRoom}/queue`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trackId })
+                body: JSON.stringify({ trackId }),
+                credentials: 'include'
             });
             const data = await response.json();
 
@@ -416,7 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch('/api/tracks', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include'
                 });
                 const data = await response.json();
 
@@ -448,7 +452,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`/api/tracks/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ titulo, artista })
+                    body: JSON.stringify({ titulo, artista }),
+                    credentials: 'include'
                 });
                 const data = await response.json();
 
@@ -475,7 +480,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRefreshTracks) {
         btnRefreshTracks.addEventListener('click', cargarTracks);
     }
-
     cargarTracks();
-
 });

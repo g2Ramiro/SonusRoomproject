@@ -2,20 +2,23 @@ import { Router } from 'express';
 import passport from 'passport';
 
 const router = Router();
+router.get('/google', passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+}));
 
-// Toma perfil y email de google
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-//Redireccion en caso de exito
 router.get('/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login-error' }),
+    passport.authenticate('google', { failureRedirect: '/login' }), 
     (req, res) => {
-        //Redireccion temporal
-        res.redirect('/');
+        req.session.save((err) => {
+            if (err) {
+                console.error("Error al guardar la sesión:", err);
+                return res.redirect('/login');
+            }
+            res.redirect('/dashboard');
+        });
     }
 );
-
-//Cerrar sesión
 router.get('/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) return next(err);
@@ -23,7 +26,6 @@ router.get('/logout', (req, res, next) => {
     });
 });
 
-// Corrobora si algun usuario conectado
 router.get('/current-user', (req, res) => {
     if (req.user) {
         res.json({ logueado: true, usuario: req.user });

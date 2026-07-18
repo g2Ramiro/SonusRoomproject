@@ -7,38 +7,45 @@ import roomRoutes from './routes/roomRoutes';
 import authRoutes from './routes/authRoutes';
 import './config/passport';
 import passport from 'passport';
+import { isAuthorized } from './middlewares/authMiddleware';
 
-// Middleware de sesión para que Socket.io lo pueda reutilizar en app.ts
 export const sessionMiddleware = session({
     secret: 'Secreto seguro de SonusRoom',
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
         secure: false,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
     }
 });
 
 export function createApp() {
     const app = express();
-    
-    // Middlewares
+
     app.use(express.json());
-    app.use(express.static(path.join(__dirname, 'views')));
     app.use(express.urlencoded({ extended: true }));
-    
-    // Usar el middleware de sesión compartido
     app.use(sessionMiddleware);
-    
-    // Passport Auth
     app.use(passport.initialize());
     app.use(passport.session());
-    
-    // Rutas de la API
-    app.use('/api', dummyRoutes);
-    app.use('/api/tracks', trackRoutes);
-    app.use('/api/rooms', roomRoutes);
     app.use('/api/auth', authRoutes);
-    
+    app.get('/login', (req, res) => {
+        res.sendFile(path.join(__dirname, 'views', 'login.html'));
+    });
+    app.get('/', (req, res) => {
+        if (req.isAuthenticated && req.isAuthenticated()) {
+            return res.redirect('/dashboard');
+        }
+        res.redirect('/login');
+    });
+    app.use('/api', isAuthorized, dummyRoutes);
+    app.use('/api/tracks', isAuthorized, trackRoutes);
+    app.use('/api/rooms', isAuthorized, roomRoutes);
+    app.get('/dashboard', isAuthorized, (req, res) => {
+        res.sendFile(path.join(__dirname, 'views', 'index.html'));
+    });
+    app.use(isAuthorized, express.static(path.join(__dirname, 'views')));
+
     return app;
 }
