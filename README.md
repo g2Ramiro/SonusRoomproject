@@ -118,6 +118,7 @@ Las rutas marcadas con **Auth** usan el middleware `isAuthorized` (responden `40
 | `GET` | `/api/tracks` | Sí | Listar tracks |
 | `GET` | `/api/tracks/:id` | Sí | Obtener track por ID |
 | `POST` | `/api/tracks` | Sí | Crear track (multipart campo `file`). Body: `titulo` (requerido), `artista`, `duracion` |
+| `POST` | `/api/tracks/:id/lyrics` | Sí | Consume **lyrics.ovh** y guarda la letra en el track. Body opcional: `titulo`, `artista` |
 | `PUT` | `/api/tracks/:id` | Sí | Actualizar `titulo`, `artista`, `duracion`, `letra` |
 | `DELETE` | `/api/tracks/:id` | Sí | Eliminar track |
 
@@ -147,7 +148,7 @@ En `http://localhost:3000/` puedes:
 
 1. Iniciar sesión con Google
 2. Crear / unirte a una sala
-3. Gestionar la **biblioteca de canciones** (crear, editar, borrar)
+3. Gestionar la **biblioteca de canciones** (crear, editar, borrar, obtener letra vía lyrics.ovh)
 4. Usar **A la fila** para meter un track existente en la cola de la sala conectada
 5. Reproducir / pausar / siguiente con sincronización vía Socket.IO
 6. Usar el **chat de la sala** (crear, listar, editar, borrar mensajes)
@@ -187,6 +188,7 @@ src/
 ├── middlewares/           # isAuthorized
 ├── models/                # User, Track, Room, Message, Playlist (Mongoose)
 ├── routes/                # auth, rooms, tracks, messages, playlists, dummy
+├── services/              # Consumo de APIs externas (lyrics.ovh)
 ├── sockets/               # audioSocket (sync + cola)
 ├── views/                 # Dashboard HTML/JS de prueba
 └── __tests__/             # Jest + Supertest
@@ -278,6 +280,7 @@ erDiagram
 |----------|-----|
 | **Cloudinary** | Archivo de audio; URL en `Track.urlAudio` |
 | **Google OAuth** | Identidad; `User.googleId` |
+| **lyrics.ovh** | API REST externa; letra en `Track.letra` vía `POST /api/tracks/:id/lyrics` |
 | **Socket.IO** | Sync de reproducción y cola |
 
 ## Tests

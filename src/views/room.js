@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const editTrackArtista = document.getElementById('editTrackArtista');
     const btnGuardarTrack = document.getElementById('btnGuardarTrack');
     const btnCancelarEdit = document.getElementById('btnCancelarEdit');
+    const panelLetra = document.getElementById('panel-letra');
+    const letraTitulo = document.getElementById('letra-titulo');
+    const letraContenido = document.getElementById('letra-contenido');
+    const btnCerrarLetra = document.getElementById('btnCerrarLetra');
 
     // Chat
     const listaMensajes = document.getElementById('lista-mensajes');
@@ -364,8 +368,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnDelete.style.fontSize = '12px';
                 btnDelete.addEventListener('click', () => eliminarTrack(track._id, track.titulo));
 
+                const btnLyrics = document.createElement('button');
+                btnLyrics.type = 'button';
+                btnLyrics.textContent = track.letra ? 'Ver letra' : 'Obtener letra';
+                btnLyrics.style.backgroundColor = '#6f42c1';
+                btnLyrics.style.padding = '6px 10px';
+                btnLyrics.style.fontSize = '12px';
+                btnLyrics.addEventListener('click', () => {
+                    if (track.letra) {
+                        mostrarLetra(track);
+                    } else {
+                        obtenerLetra(track);
+                    }
+                });
+
                 actions.appendChild(btnQueue);
                 actions.appendChild(btnEdit);
+                actions.appendChild(btnLyrics);
                 actions.appendChild(btnDelete);
                 li.appendChild(info);
                 li.appendChild(actions);
@@ -543,6 +562,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnRefreshTracks) {
         btnRefreshTracks.addEventListener('click', cargarTracks);
+    }
+
+    function mostrarLetra(track) {
+        if (!panelLetra || !letraContenido) return;
+        if (letraTitulo) {
+            letraTitulo.textContent = 'Letra: ' + track.titulo + ' — ' + (track.artista || 'Artista Desconocido');
+        }
+        letraContenido.textContent = track.letra || '(sin letra)';
+        panelLetra.style.display = 'block';
+        panelLetra.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function obtenerLetra(track) {
+        if (!track || !track._id) return;
+
+        if (!track.artista || track.artista === 'Artista Desconocido') {
+            alert('Edita el track y pon un artista real antes de buscar la letra.');
+            return;
+        }
+
+        if (estadoTrack) estadoTrack.innerText = 'Buscando letra en lyrics.ovh...';
+
+        try {
+            const response = await fetch('/api/tracks/' + track._id + '/lyrics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+                credentials: 'include',
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                if (estadoTrack) estadoTrack.innerText = 'Letra guardada desde lyrics.ovh.';
+                mostrarLetra(data.track);
+                cargarTracks();
+            } else {
+                if (estadoTrack) estadoTrack.innerText = '';
+                alert(data.error || data.mensaje || 'No se pudo obtener la letra');
+            }
+        } catch (err) {
+            console.error(err);
+            if (estadoTrack) estadoTrack.innerText = '';
+            alert('Error de red al consultar lyrics.ovh.');
+        }
+    }
+
+    if (btnCerrarLetra) {
+        btnCerrarLetra.addEventListener('click', () => {
+            if (panelLetra) panelLetra.style.display = 'none';
+        });
     }
 
     function llenarSelectTracks(selectedIds) {

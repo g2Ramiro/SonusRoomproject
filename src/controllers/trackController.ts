@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
 import Track from '../models/Track';
+import {
+    fetchLyricsFromExternalApi,
+    LyricsApiError,
+    LyricsNotFoundError,
+} from '../services/lyricsService';
 
 interface CloudinaryFile extends Express.Multer.File {
     path: string;
@@ -156,6 +161,57 @@ export const deleteTrack = async (req: Request, res: Response): Promise<void> =>
     } catch (error: unknown) {
         res.status(500).json({
             error: 'Error al eliminar la canción',
+            detalles: getErrorMessage(error),
+        });
+    }
+};
+
+// Obtener letra desde Lyrics.ovh y guardarla en el track
+export const fetchTrackLyrics = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const track = await Track.findById(req.params.id);
+        if (!track) {
+            res.status(404).json({ mensaje: 'Canción no encontrada' });
+            return;
+        }
+
+        const artista = (req.body?.artista && String(req.body.artista).trim()) || track.artista;
+        const titulo = (req.body?.titulo && String(req.body.titulo).trim()) || track.titulo;
+
+        if (!artista || artista === 'Artista Desconocido') {
+            res.status(400).json({
+                error: 'Se necesita un artista válido para buscar la letra',
+            });
+            return;
+        }
+
+        const letra = await fetchLyricsFromExternalApi(artista, titulo);
+
+        track.letra = letra;
+        if (req.body?.artista && String(req.body.artista).trim()) {
+            track.artista = String(req.body.artista).trim();
+        }
+        if (req.body?.titulo && String(req.body.titulo).trim()) {
+            track.titulo = String(req.body.titulo).trim();
+        }
+        await track.save();
+
+        res.status(200).json({
+            mensaje: 'Letra obtenida de lyrics.ovh y guardada',
+            fuente: 'https://api.lyrics.ovh',
+            track,
+        });
+    } catch (error: unknown) {
+        if (error instanceof LyricsNotFoundError) {
+            res.status(404).json({ error: error.message, fuente: 'lyrics.ovh' });
+            return;
+        }
+        if (error instanceof LyricsApiError) {
+            res.status(502).json({ error: error.message, fuente: 'lyrics.ovh' });
+            return;
+        }
+        res.status(500).json({
+            error: 'Error al obtener la letra',
             detalles: getErrorMessage(error),
         });
     }
