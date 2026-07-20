@@ -26,19 +26,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnGuardarTrack = document.getElementById('btnGuardarTrack');
     const btnCancelarEdit = document.getElementById('btnCancelarEdit');
 
+    // Chat
+    const listaMensajes = document.getElementById('lista-mensajes');
+    const formEnviarMensaje = document.getElementById('form-enviar-mensaje');
+    const mensajeContenido = document.getElementById('mensajeContenido');
+    const btnRefreshMensajes = document.getElementById('btnRefreshMensajes');
+    const estadoChat = document.getElementById('estado-chat');
+    const formEditarMensaje = document.getElementById('form-editar-mensaje');
+    const editMensajeId = document.getElementById('editMensajeId');
+    const editMensajeContenido = document.getElementById('editMensajeContenido');
+    const btnGuardarMensaje = document.getElementById('btnGuardarMensaje');
+    const btnCancelarEditMensaje = document.getElementById('btnCancelarEditMensaje');
+
+    // Playlists
+    const formCrearPlaylist = document.getElementById('form-crear-playlist');
+    const playlistNombre = document.getElementById('playlistNombre');
+    const playlistDescripcion = document.getElementById('playlistDescripcion');
+    const estadoPlaylist = document.getElementById('estado-playlist');
+    const listaPlaylists = document.getElementById('lista-playlists');
+    const btnRefreshPlaylists = document.getElementById('btnRefreshPlaylists');
+    const formEditarPlaylist = document.getElementById('form-editar-playlist');
+    const editPlaylistId = document.getElementById('editPlaylistId');
+    const editPlaylistNombre = document.getElementById('editPlaylistNombre');
+    const editPlaylistDescripcion = document.getElementById('editPlaylistDescripcion');
+    const editPlaylistTrackSelect = document.getElementById('editPlaylistTrackSelect');
+    const btnGuardarPlaylist = document.getElementById('btnGuardarPlaylist');
+    const btnCancelarEditPlaylist = document.getElementById('btnCancelarEditPlaylist');
+
     let currentRoom = "";
+    let currentRoomId = "";
     let isBroadcasting = false;
+    let tracksCache = [];
+    let playlistTracksCache = [];
+
+    async function resolverSalaId(codigoAcceso) {
+        const response = await fetch('/api/rooms', { credentials: 'include' });
+        const rooms = await response.json();
+        if (!response.ok || !Array.isArray(rooms)) {
+            throw new Error('No se pudieron listar las salas');
+        }
+        const sala = rooms.find((r) => String(r.codigoAcceso).toUpperCase() === codigoAcceso);
+        return sala ? sala._id : null;
+    }
 
     // Unirse a una sala existente usando el código de acceso
     if (btnJoin && roomInput) {
-        btnJoin.addEventListener('click', () => {
+        btnJoin.addEventListener('click', async () => {
             currentRoom = roomInput.value.trim().toUpperCase();
             if (!currentRoom) return alert("Por favor ingresa un código de sala válido.");
 
-            socket.emit('join-room', currentRoom);
-            alert(`Conectado a la sala: ${currentRoom}`);
+            try {
+                currentRoomId = await resolverSalaId(currentRoom);
+                if (!currentRoomId) {
+                    alert(`No se encontró la sala ${currentRoom}. Verifica el código.`);
+                    currentRoom = "";
+                    return;
+                }
 
-            if (dangerZone) dangerZone.style.display = 'block';
+                socket.emit('join-room', currentRoom);
+                alert(`Conectado a la sala: ${currentRoom}`);
+
+                if (dangerZone) dangerZone.style.display = 'block';
+                if (estadoChat) estadoChat.innerText = `Chat activo en ${currentRoom}`;
+                cargarMensajes();
+            } catch (err) {
+                console.error(err);
+                alert("Error al resolver la sala. Intenta de nuevo.");
+                currentRoom = "";
+                currentRoomId = "";
+            }
         });
     }
 
@@ -105,12 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Limpiamos los estados locales y reseteamos el reproductor
                     currentRoom = "";
+                    currentRoomId = "";
                     if (roomInput) roomInput.value = "";
                     if (audioPlayer) {
                         audioPlayer.pause();
                         audioPlayer.src = "";
                     }
                     if (dangerZone) dangerZone.style.display = 'none';
+                    if (estadoChat) estadoChat.innerText = '';
+                    if (listaMensajes) listaMensajes.innerHTML = '<li>Sin sala conectada.</li>';
 
                     actualizarInterfazCola([]); // Vaciamos la lista en pantalla
                 } else {
@@ -257,9 +316,14 @@ document.addEventListener('DOMContentLoaded', () => {
             listaTracks.innerHTML = '';
 
             if (!Array.isArray(tracks) || tracks.length === 0) {
+                tracksCache = [];
+                llenarSelectTracks();
                 listaTracks.innerHTML = '<li>No hay canciones registradas todavía.</li>';
                 return;
             }
+
+            tracksCache = tracks;
+            llenarSelectTracks();
 
             tracks.forEach((track) => {
                 const li = document.createElement('li');
@@ -480,5 +544,395 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRefreshTracks) {
         btnRefreshTracks.addEventListener('click', cargarTracks);
     }
+
+    function llenarSelectTracks(selectedIds) {
+        if (!editPlaylistTrackSelect) return;
+        const keep = selectedIds || [];
+        editPlaylistTrackSelect.innerHTML = '<option value="">— Ninguno (no agregar) —</option>';
+        tracksCache.forEach((track) => {
+            const option = document.createElement('option');
+            option.value = track._id;
+            option.textContent = track.titulo + ' - ' + (track.artista || 'Artista Desconocido');
+            if (keep.includes(track._id)) option.disabled = true;
+            editPlaylistTrackSelect.appendChild(option);
+        });
+    }
+
+    // --- Chat (/api/messages) ---
+    async function cargarMensajes() {
+        if (!listaMensajes) return;
+
+        if (!currentRoomId) {
+            listaMensajes.innerHTML = '<li>Sin sala conectada.</li>';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/messages?salaId=' + encodeURIComponent(currentRoomId), {
+                credentials: 'include',
+            });
+            const messages = await response.json();
+
+            if (!response.ok) {
+                listaMensajes.innerHTML = '<li>Error: ' + (messages.error || 'No se pudieron cargar') + '</li>';
+                return;
+            }
+
+            listaMensajes.innerHTML = '';
+
+            if (!Array.isArray(messages) || messages.length === 0) {
+                listaMensajes.innerHTML = '<li>No hay mensajes en esta sala todavía.</li>';
+                return;
+            }
+
+            messages.forEach((msg) => {
+                const li = document.createElement('li');
+
+                const info = document.createElement('span');
+                const autor = (msg.usuario && msg.usuario.nombre) || 'Usuario';
+                info.textContent = autor + ': ' + msg.contenido;
+
+                const actions = document.createElement('span');
+                actions.style.display = 'flex';
+                actions.style.gap = '6px';
+                actions.style.flexShrink = '0';
+
+                const btnEdit = document.createElement('button');
+                btnEdit.type = 'button';
+                btnEdit.textContent = 'Editar';
+                btnEdit.className = 'btn-sm';
+                btnEdit.style.backgroundColor = '#007bff';
+                btnEdit.addEventListener('click', () => abrirEdicionMensaje(msg));
+
+                const btnDelete = document.createElement('button');
+                btnDelete.type = 'button';
+                btnDelete.textContent = 'Borrar';
+                btnDelete.className = 'btn-sm';
+                btnDelete.style.backgroundColor = '#dc3545';
+                btnDelete.addEventListener('click', () => eliminarMensaje(msg._id));
+
+                actions.appendChild(btnEdit);
+                actions.appendChild(btnDelete);
+                li.appendChild(info);
+                li.appendChild(actions);
+                listaMensajes.appendChild(li);
+            });
+        } catch (err) {
+            console.error(err);
+            listaMensajes.innerHTML = '<li>Error de red al cargar mensajes.</li>';
+        }
+    }
+
+    function abrirEdicionMensaje(msg) {
+        if (!formEditarMensaje || !editMensajeId || !editMensajeContenido) return;
+        editMensajeId.value = msg._id;
+        editMensajeContenido.value = msg.contenido || '';
+        formEditarMensaje.style.display = 'block';
+        editMensajeContenido.focus();
+    }
+
+    function cerrarEdicionMensaje() {
+        if (!formEditarMensaje) return;
+        formEditarMensaje.style.display = 'none';
+        if (editMensajeId) editMensajeId.value = '';
+        if (editMensajeContenido) editMensajeContenido.value = '';
+    }
+
+    async function eliminarMensaje(id) {
+        if (!confirm('¿Eliminar este mensaje?')) return;
+
+        try {
+            const response = await fetch('/api/messages/' + id, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                if (estadoChat) estadoChat.innerText = 'Mensaje eliminado.';
+                if (editMensajeId && editMensajeId.value === id) cerrarEdicionMensaje();
+                cargarMensajes();
+            } else {
+                alert(data.error || data.mensaje || 'No se pudo eliminar');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de red al eliminar el mensaje.');
+        }
+    }
+
+    if (formEnviarMensaje) {
+        formEnviarMensaje.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentRoomId) {
+                alert('Primero conéctate a una sala para enviar mensajes.');
+                return;
+            }
+
+            const contenido = mensajeContenido ? mensajeContenido.value.trim() : '';
+            if (!contenido) return alert('Escribe un mensaje.');
+
+            try {
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ salaId: currentRoomId, contenido }),
+                    credentials: 'include',
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (mensajeContenido) mensajeContenido.value = '';
+                    if (estadoChat) estadoChat.innerText = 'Mensaje enviado.';
+                    cargarMensajes();
+                } else {
+                    alert(data.error || data.mensaje || 'No se pudo enviar');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de red al enviar el mensaje.');
+            }
+        });
+    }
+
+    if (btnGuardarMensaje) {
+        btnGuardarMensaje.addEventListener('click', async () => {
+            const id = editMensajeId ? editMensajeId.value : '';
+            const contenido = editMensajeContenido ? editMensajeContenido.value.trim() : '';
+
+            if (!id) return alert('No hay mensaje seleccionado.');
+            if (!contenido) return alert('El contenido no puede estar vacío.');
+
+            try {
+                btnGuardarMensaje.disabled = true;
+                const response = await fetch('/api/messages/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contenido }),
+                    credentials: 'include',
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (estadoChat) estadoChat.innerText = 'Mensaje actualizado.';
+                    cerrarEdicionMensaje();
+                    cargarMensajes();
+                } else {
+                    alert(data.error || data.mensaje || 'No se pudo actualizar');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de red al actualizar el mensaje.');
+            } finally {
+                btnGuardarMensaje.disabled = false;
+            }
+        });
+    }
+
+    if (btnCancelarEditMensaje) {
+        btnCancelarEditMensaje.addEventListener('click', cerrarEdicionMensaje);
+    }
+
+    if (btnRefreshMensajes) {
+        btnRefreshMensajes.addEventListener('click', cargarMensajes);
+    }
+
+    // --- Playlists (/api/playlists) ---
+    async function cargarPlaylists() {
+        if (!listaPlaylists) return;
+
+        try {
+            const response = await fetch('/api/playlists', { credentials: 'include' });
+            const playlists = await response.json();
+
+            if (!response.ok) {
+                listaPlaylists.innerHTML = '<li>Error: ' + (playlists.error || 'No se pudieron cargar') + '</li>';
+                return;
+            }
+
+            listaPlaylists.innerHTML = '';
+
+            if (!Array.isArray(playlists) || playlists.length === 0) {
+                listaPlaylists.innerHTML = '<li>No hay playlists todavía.</li>';
+                return;
+            }
+
+            playlists.forEach((playlist) => {
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.alignItems = 'flex-start';
+                li.style.gap = '8px';
+                li.style.flexDirection = 'column';
+
+                const trackTitles = Array.isArray(playlist.tracks) && playlist.tracks.length
+                    ? playlist.tracks.map((t) => (typeof t === 'object' ? t.titulo : t)).join(', ')
+                    : 'sin tracks';
+
+                const info = document.createElement('span');
+                info.innerHTML = '<strong>' + playlist.nombre + '</strong> — ' +
+                    (playlist.descripcion || 'Sin descripción') + '<br>' +
+                    '<span class="muted">' + (playlist.tracks ? playlist.tracks.length : 0) +
+                    ' track(s): ' + trackTitles + '</span>';
+
+                const actions = document.createElement('span');
+                actions.style.display = 'flex';
+                actions.style.gap = '6px';
+
+                const btnEdit = document.createElement('button');
+                btnEdit.type = 'button';
+                btnEdit.textContent = 'Editar';
+                btnEdit.className = 'btn-sm';
+                btnEdit.style.backgroundColor = '#007bff';
+                btnEdit.addEventListener('click', () => abrirEdicionPlaylist(playlist));
+
+                const btnDelete = document.createElement('button');
+                btnDelete.type = 'button';
+                btnDelete.textContent = 'Borrar';
+                btnDelete.className = 'btn-sm';
+                btnDelete.style.backgroundColor = '#dc3545';
+                btnDelete.addEventListener('click', () => eliminarPlaylist(playlist._id, playlist.nombre));
+
+                actions.appendChild(btnEdit);
+                actions.appendChild(btnDelete);
+                li.appendChild(info);
+                li.appendChild(actions);
+                listaPlaylists.appendChild(li);
+            });
+        } catch (err) {
+            console.error(err);
+            listaPlaylists.innerHTML = '<li>Error de red al cargar playlists.</li>';
+        }
+    }
+
+    function abrirEdicionPlaylist(playlist) {
+        if (!formEditarPlaylist || !editPlaylistId || !editPlaylistNombre) return;
+        editPlaylistId.value = playlist._id;
+        editPlaylistNombre.value = playlist.nombre || '';
+        if (editPlaylistDescripcion) editPlaylistDescripcion.value = playlist.descripcion || '';
+        playlistTracksCache = Array.isArray(playlist.tracks)
+            ? playlist.tracks.map((t) => (typeof t === 'object' ? t._id : t))
+            : [];
+        llenarSelectTracks(playlistTracksCache);
+        formEditarPlaylist.style.display = 'block';
+        editPlaylistNombre.focus();
+    }
+
+    function cerrarEdicionPlaylist() {
+        if (!formEditarPlaylist) return;
+        formEditarPlaylist.style.display = 'none';
+        if (editPlaylistId) editPlaylistId.value = '';
+        if (editPlaylistNombre) editPlaylistNombre.value = '';
+        if (editPlaylistDescripcion) editPlaylistDescripcion.value = '';
+        playlistTracksCache = [];
+        llenarSelectTracks();
+    }
+
+    async function eliminarPlaylist(id, nombre) {
+        if (!confirm('¿Eliminar la playlist "' + nombre + '"?')) return;
+
+        try {
+            const response = await fetch('/api/playlists/' + id, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                if (estadoPlaylist) estadoPlaylist.innerText = 'Playlist eliminada.';
+                if (editPlaylistId && editPlaylistId.value === id) cerrarEdicionPlaylist();
+                cargarPlaylists();
+            } else {
+                alert(data.error || data.mensaje || 'No se pudo eliminar');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de red al eliminar la playlist.');
+        }
+    }
+
+    if (formCrearPlaylist) {
+        formCrearPlaylist.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre = playlistNombre ? playlistNombre.value.trim() : '';
+            const descripcion = playlistDescripcion ? playlistDescripcion.value.trim() : '';
+
+            if (!nombre) return alert('El nombre de la playlist es requerido.');
+
+            try {
+                const response = await fetch('/api/playlists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, descripcion }),
+                    credentials: 'include',
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (estadoPlaylist) estadoPlaylist.innerText = 'Playlist creada.';
+                    formCrearPlaylist.reset();
+                    cargarPlaylists();
+                } else {
+                    alert(data.error || data.mensaje || 'No se pudo crear');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de red al crear la playlist.');
+            }
+        });
+    }
+
+    if (btnGuardarPlaylist) {
+        btnGuardarPlaylist.addEventListener('click', async () => {
+            const id = editPlaylistId ? editPlaylistId.value : '';
+            const nombre = editPlaylistNombre ? editPlaylistNombre.value.trim() : '';
+            const descripcion = editPlaylistDescripcion ? editPlaylistDescripcion.value.trim() : '';
+            const trackToAdd = editPlaylistTrackSelect ? editPlaylistTrackSelect.value : '';
+
+            if (!id) return alert('No hay playlist seleccionada.');
+            if (!nombre) return alert('El nombre no puede estar vacío.');
+
+            const tracks = playlistTracksCache.slice();
+            if (trackToAdd && !tracks.includes(trackToAdd)) {
+                tracks.push(trackToAdd);
+            }
+
+            try {
+                btnGuardarPlaylist.disabled = true;
+                const response = await fetch('/api/playlists/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, descripcion, tracks }),
+                    credentials: 'include',
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (estadoPlaylist) estadoPlaylist.innerText = 'Playlist actualizada.';
+                    cerrarEdicionPlaylist();
+                    cargarPlaylists();
+                } else {
+                    alert(data.error || data.mensaje || 'No se pudo actualizar');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de red al actualizar la playlist.');
+            } finally {
+                btnGuardarPlaylist.disabled = false;
+            }
+        });
+    }
+
+    if (btnCancelarEditPlaylist) {
+        btnCancelarEditPlaylist.addEventListener('click', cerrarEdicionPlaylist);
+    }
+
+    if (btnRefreshPlaylists) {
+        btnRefreshPlaylists.addEventListener('click', cargarPlaylists);
+    }
+
     cargarTracks();
+    cargarPlaylists();
 });

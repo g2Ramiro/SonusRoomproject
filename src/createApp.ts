@@ -4,6 +4,8 @@ import session from 'express-session';
 import dummyRoutes from './routes/dummyRoutes';
 import trackRoutes from './routes/trackRoutes';
 import roomRoutes from './routes/roomRoutes';
+import messageRoutes from './routes/messageRoutes';
+import playlistRoutes from './routes/playlistRoutes';
 import authRoutes from './routes/authRoutes';
 import './config/passport';
 import passport from 'passport';
@@ -42,6 +44,8 @@ export function createApp() {
     app.use('/api', isAuthorized, dummyRoutes);
     app.use('/api/tracks', isAuthorized, trackRoutes);
     app.use('/api/rooms', isAuthorized, roomRoutes);
+    app.use('/api/messages', isAuthorized, messageRoutes);
+    app.use('/api/playlists', isAuthorized, playlistRoutes);
     app.get('/dashboard', isAuthorized, (req, res) => {
         res.sendFile(path.join(__dirname, 'views', 'index.html'));
     });

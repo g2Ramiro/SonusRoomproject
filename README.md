@@ -121,6 +121,26 @@ Las rutas marcadas con **Auth** usan el middleware `isAuthorized` (responden `40
 | `PUT` | `/api/tracks/:id` | Sí | Actualizar `titulo`, `artista`, `duracion`, `letra` |
 | `DELETE` | `/api/tracks/:id` | Sí | Eliminar track |
 
+### Mensajes (`/api/messages`)
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| `GET` | `/api/messages` | Sí | Listar mensajes. Query opcional: `?salaId=` |
+| `GET` | `/api/messages/:id` | Sí | Obtener mensaje por ID |
+| `POST` | `/api/messages` | Sí | Crear mensaje (`{ "salaId": "...", "contenido": "..." }`) |
+| `PUT` | `/api/messages/:id` | Sí | Actualizar `contenido` |
+| `DELETE` | `/api/messages/:id` | Sí | Eliminar mensaje |
+
+### Playlists (`/api/playlists`)
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| `GET` | `/api/playlists` | Sí | Listar playlists. Query opcional: `?propietarioId=` |
+| `GET` | `/api/playlists/:id` | Sí | Obtener playlist por ID |
+| `POST` | `/api/playlists` | Sí | Crear playlist (`{ "nombre": "...", "descripcion?", "esPublica?", "tracks?" }`) |
+| `PUT` | `/api/playlists/:id` | Sí | Actualizar `nombre`, `descripcion`, `esPublica`, `tracks` |
+| `DELETE` | `/api/playlists/:id` | Sí | Eliminar playlist |
+
 ### Dashboard (UI de prueba)
 
 En `http://localhost:3000/` puedes:
@@ -130,6 +150,8 @@ En `http://localhost:3000/` puedes:
 3. Gestionar la **biblioteca de canciones** (crear, editar, borrar)
 4. Usar **A la fila** para meter un track existente en la cola de la sala conectada
 5. Reproducir / pausar / siguiente con sincronización vía Socket.IO
+6. Usar el **chat de la sala** (crear, listar, editar, borrar mensajes)
+7. Gestionar **playlists** (crear, listar, editar, agregar tracks, borrar)
 
 ## Socket.IO
 
@@ -161,10 +183,10 @@ src/
 ├── config/
 │   ├── cloudinary.ts      # Multer + Cloudinary
 │   └── passport.ts        # Google OAuth strategy
-├── controllers/           # Lógica de rooms, tracks, dummy
+├── controllers/           # Lógica de rooms, tracks, messages, playlists, dummy
 ├── middlewares/           # isAuthorized
-├── models/                # User, Track, Room (Mongoose)
-├── routes/                # auth, rooms, tracks, dummy
+├── models/                # User, Track, Room, Message, Playlist (Mongoose)
+├── routes/                # auth, rooms, tracks, messages, playlists, dummy
 ├── sockets/               # audioSocket (sync + cola)
 ├── views/                 # Dashboard HTML/JS de prueba
 └── __tests__/             # Jest + Supertest
@@ -178,10 +200,12 @@ Persistencia en **MongoDB** (local o Atlas) con **Mongoose**.
 erDiagram
     USER ||--o{ TRACK : "sube (subidoPor)"
     USER ||--o{ ROOM : "hospeda (host)"
-    USER ||--o{ MESSAGE : "envía (planificado)"
+    USER ||--o{ MESSAGE : "envía"
+    USER ||--o{ PLAYLIST : "posee (propietario)"
     ROOM ||--o| TRACK : "reproduce (cancionActual)"
     ROOM }o--o{ TRACK : "cola (colaReproduccion)"
-    ROOM ||--o{ MESSAGE : "contiene (planificado)"
+    ROOM ||--o{ MESSAGE : "contiene"
+    PLAYLIST }o--o{ TRACK : "incluye (tracks)"
 
     USER {
         ObjectId _id PK
@@ -219,10 +243,22 @@ erDiagram
 
     MESSAGE {
         ObjectId _id PK
-        ObjectId sala FK "planificado"
-        ObjectId usuario FK "planificado"
-        string contenido "planificado"
-        date createdAt "planificado"
+        ObjectId sala FK
+        ObjectId usuario FK
+        string contenido
+        date createdAt
+        date updatedAt
+    }
+
+    PLAYLIST {
+        ObjectId _id PK
+        string nombre
+        string descripcion
+        ObjectId propietario FK
+        ObjectId[] tracks FK
+        boolean esPublica
+        date createdAt
+        date updatedAt
     }
 ```
 
@@ -233,7 +269,8 @@ erDiagram
 | **User** | Usuario autenticado con Google (`googleId`, `email`, `avatar`) | Implementado |
 | **Track** | Audio en Cloudinary + metadata | Implementado |
 | **Room** | Sala con `colaReproduccion`, `cancionActual` y sync en vivo | Implementado |
-| **Message** | Chat en sala | Planificado |
+| **Message** | Chat en sala (`sala`, `usuario`, `contenido`) | Implementado |
+| **Playlist** | Listas de reproducción del usuario (`tracks`, `esPublica`) | Implementado |
 
 ### Servicios externos
 

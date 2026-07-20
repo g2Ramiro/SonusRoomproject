@@ -30,11 +30,46 @@
         }
 
         input[type="text"],
-        input[type="file"] {
+        input[type="file"],
+        input[type="number"],
+        select,
+        textarea {
             width: 100%;
             padding: 8px;
             margin: 8px 0;
             box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .chat-box {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 8px;
+            background: #fafafa;
+        }
+
+        .chat-box li {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .muted {
+            font-size: 13px;
+            color: #666;
         }
 
         button {
@@ -159,6 +194,69 @@
                 style="background-color: #6c757d; margin-bottom: 10px;">Actualizar lista</button>
             <ul id="lista-tracks">
                 <li>Cargando canciones...</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>Chat de la sala</h3>
+            <p class="muted">Conéctate a una sala para ver y enviar mensajes.</p>
+            <p id="estado-chat" class="muted" style="font-style: italic;"></p>
+            <div class="chat-box">
+                <ul id="lista-mensajes">
+                    <li>Sin sala conectada.</li>
+                </ul>
+            </div>
+            <form id="form-enviar-mensaje" style="margin-bottom: 10px;">
+                <label for="mensajeContenido"><strong>Nuevo mensaje:</strong></label>
+                <textarea id="mensajeContenido" placeholder="Escribe un mensaje..." required></textarea>
+                <button type="submit" style="background-color: #007bff;">Enviar</button>
+                <button type="button" id="btnRefreshMensajes" class="btn-sm"
+                    style="background-color: #6c757d; margin-left: 6px;">Actualizar</button>
+            </form>
+            <div id="form-editar-mensaje"
+                style="display: none; margin-top: 10px; padding: 12px; background: #f8f9fa; border-radius: 4px;">
+                <strong>Editar mensaje</strong>
+                <input type="hidden" id="editMensajeId">
+                <textarea id="editMensajeContenido" required></textarea>
+                <button type="button" id="btnGuardarMensaje" style="background-color: #007bff;">Guardar</button>
+                <button type="button" id="btnCancelarEditMensaje" class="btn-sm"
+                    style="background-color: #6c757d; margin-left: 6px;">Cancelar</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Playlists</h3>
+            <p class="muted">Crea listas y agrégales tracks de la biblioteca.</p>
+            <form id="form-crear-playlist" style="margin-bottom: 15px;">
+                <label for="playlistNombre"><strong>Nombre:</strong></label>
+                <input type="text" id="playlistNombre" placeholder="Ej: Favoritos de la noche" required>
+                <label for="playlistDescripcion">Descripción (opcional):</label>
+                <input type="text" id="playlistDescripcion" placeholder="Breve descripción">
+                <button type="submit" style="background-color: #007bff;">Crear playlist</button>
+            </form>
+            <p id="estado-playlist" class="muted" style="font-style: italic;"></p>
+
+            <div id="form-editar-playlist"
+                style="display: none; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 4px;">
+                <strong>Editar playlist</strong>
+                <input type="hidden" id="editPlaylistId">
+                <label>Nombre:</label>
+                <input type="text" id="editPlaylistNombre" required>
+                <label>Descripción:</label>
+                <input type="text" id="editPlaylistDescripcion">
+                <label>Agregar track (opcional):</label>
+                <select id="editPlaylistTrackSelect">
+                    <option value="">— Ninguno —</option>
+                </select>
+                <button type="button" id="btnGuardarPlaylist" style="background-color: #007bff;">Guardar</button>
+                <button type="button" id="btnCancelarEditPlaylist" class="btn-sm"
+                    style="background-color: #6c757d; margin-left: 6px;">Cancelar</button>
+            </div>
+
+            <button type="button" id="btnRefreshPlaylists" class="btn-sm"
+                style="background-color: #6c757d; margin-bottom: 10px;">Actualizar lista</button>
+            <ul id="lista-playlists">
+                <li>Cargando playlists...</li>
             </ul>
         </div>
     </div>
