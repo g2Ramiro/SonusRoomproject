@@ -9,7 +9,9 @@ import playlistRoutes from './routes/playlistRoutes';
 import authRoutes from './routes/authRoutes';
 import './config/passport';
 import passport from 'passport';
+import swaggerUi from 'swagger-ui-express';
 import { isAuthorized } from './middlewares/authMiddleware';
+import { swaggerSpec } from './config/swagger';
 
 export const sessionMiddleware = session({
     secret: 'Secreto seguro de SonusRoom',
@@ -31,6 +33,16 @@ export function createApp() {
     app.use(sessionMiddleware);
     app.use(passport.initialize());
     app.use(passport.session());
+    app.use(
+        '/api-docs',
+        swaggerUi.serve,
+        swaggerUi.setup(swaggerSpec, {
+            customSiteTitle: 'SonusRoom API Docs',
+        })
+    );
+    app.get('/api-docs.json', (_req, res) => {
+        res.json(swaggerSpec);
+    });
     app.use('/api/auth', authRoutes);
     app.get('/login', (req, res) => {
         res.sendFile(path.join(__dirname, 'views', 'login.html'));
@@ -41,7 +53,7 @@ export function createApp() {
         }
         res.redirect('/login');
     });
-    app.use('/api', isAuthorized, dummyRoutes);
+    app.use('/api', dummyRoutes);
     app.use('/api/tracks', isAuthorized, trackRoutes);
     app.use('/api/rooms', isAuthorized, roomRoutes);
     app.use('/api/messages', isAuthorized, messageRoutes);

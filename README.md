@@ -76,6 +76,23 @@ El servidor queda en `http://localhost:3000` (o el puerto de `PORT`).
 
 El dashboard de prueba se sirve en `/` (`src/views/`).
 
+## Documentación de la API
+
+La especificación **OpenAPI 3.0** documenta las rutas, parámetros, cuerpos,
+respuestas, modelos y autenticación:
+
+- Swagger UI: `http://localhost:3000/api-docs`
+- OpenAPI JSON: `http://localhost:3000/api-docs.json`
+
+Para ejecutar rutas protegidas desde Swagger UI:
+
+1. Abre `http://localhost:3000/api/auth/google` e inicia sesión.
+2. Regresa a `/api-docs` en el mismo navegador.
+3. Abre una operación, selecciona **Try it out** y luego **Execute**.
+
+La cookie de sesión se envía automáticamente. No es necesario copiar un token.
+El JSON de OpenAPI también puede importarse en Postman o Insomnia.
+
 ## Autenticación
 
 Las mutaciones de salas/tracks y **todas** las conexiones Socket.IO requieren sesión de Google.
