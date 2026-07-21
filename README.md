@@ -302,11 +302,39 @@ erDiagram
 
 ## Tests
 
+Ejecutar toda la suite:
+
 ```bash
 npm run test
 ```
 
-Los endpoints dummy (`/api/health`, `/api/dummy`) tienen cobertura con Jest y Supertest.
+Ejecutarla una sola vez y en serie:
+
+```bash
+npm test -- --runInBand
+```
+
+Generar el reporte de cobertura:
+
+```bash
+npm run test:coverage
+```
+
+La suite usa **Jest**, **Supertest** y mocks para evitar llamadas reales a Google OAuth y
+lyrics.ovh. Actualmente cubre:
+
+- Endpoints públicos `/api/health` y `/api/dummy`.
+- Middleware de autorización para sesiones autenticadas y respuestas `401`.
+- Servicio de letras: éxito, parámetros codificados, letras ausentes, errores HTTP y fallos de red.
+- Flujos HTTP sin sesión: redirección al login, usuario actual, OAuth no configurado, rutas protegidas y OpenAPI.
+
+Los siguientes módulos están reservados para completar:
+
+- `playlistController.test.ts`: pruebas unitarias del controlador con `Playlist` y `Track` simulados.
+- `roomRoutes.integration.test.ts`: ciclo de salas con Supertest y MongoDB en memoria.
+
+Los casos pendientes usan `test.todo`, por lo que Jest los reporta sin ejecutarlos ni marcar la
+suite como fallida.
 
 El marco de trabajo implementado al momento:
 
