@@ -86,7 +86,6 @@ describe('playlistController (Pruebas Unitarias Aisladas)', () => {
                 propietario: 'user_12345',
             };
 
-            // Mock del constructor de Playlist y su método save()
             (Playlist as unknown as jest.Mock).mockImplementation(() => ({
                 _id: 'playlist_123',
                 save: jest.fn().mockResolvedValue(mockSavedPlaylist),
